@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>클락(앙헬레스) 여행 플래너</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__shade"></div>
+      <nav class="topbar" aria-label="주요 메뉴">
+        <strong>My Clark Trip</strong>
+        <h1 class="topbar__title">클락(앙헬레스) 여행 플래너</h1>
+        <div class="hero__stats guide-view" aria-label="여행 요약">
+          <span><b id="heroDays">4일</b> 일정</span>
+        </div>
+        <div class="segments guide-view" role="tablist" aria-label="일차 선택">
+          <button class="segment is-active" type="button" data-day="all">전체</button>
+          <button class="segment" type="button" data-day="1">1일차</button>
+          <button class="segment" type="button" data-day="2">2일차</button>
+          <button class="segment" type="button" data-day="3">3일차</button>
+          <button class="segment" type="button" data-day="4">4일차</button>
+        </div>
+        <div class="spend-amounts guide-view" aria-label="예상 지출">
+          <span>예상 지출</span>
+          <strong id="metricSpend">₱63,300</strong>
+          <strong id="metricSpendKrw">₩1,688,528</strong>
+        </div>
+        <div class="topbar__tabs" role="tablist" aria-label="페이지 선택">
+          <button class="top-tab is-active" type="button" data-view="guide">일정</button>
+          <button class="top-tab" type="button" data-view="saved">장소</button>
+          <button class="top-tab" type="button" data-view="golf">골프</button>
+          <button class="top-tab" type="button" data-view="notes">메모</button>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel schedule-panel guide-view" aria-labelledby="scheduleTitle">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Timeline</p>
+            <h2 id="scheduleTitle">일정</h2>
+          </div>
+          <div class="section-actions">
+            <output id="visibleCount"></output>
+            <button class="small-action" id="addEventButton" type="button">추가</button>
+          </div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </section>
+
+      <section class="saved-view is-hidden" aria-labelledby="savedTitle">
+        <section class="panel">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Google Maps</p>
+              <h2 id="savedTitle">장소</h2>
+            </div>
+            <div class="section-actions">
+              <button class="small-action" id="addPlaceButton" type="button">추가</button>
+              <a class="map-link" href="https://maps.app.goo.gl/t8CPWQw8J5znChTDA" target="_blank" rel="noreferrer">원본 지도</a>
+            </div>
+          </div>
+          <div class="category-strip" id="categoryStrip" aria-label="장소 카테고리"></div>
+          <div class="saved-grid" id="savedGrid"></div>
+        </section>
+      </section>
+
+      <section class="golf-view is-hidden" aria-label="골프 비용 계산기">
+        <section class="panel">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Golf</p>
+              <h2 id="golfTitle">골프 비용 계산기</h2>
+            </div>
+            <div class="section-actions">
+              <button class="small-action" id="addRoundButton" type="button">라운드 추가</button>
+            </div>
+          </div>
+          <div class="golf-settings">
+            <label class="inline-field">
+              <span>인원수</span>
+              <select id="golfPeople" aria-label="인원수">
+                <option value="2">2명</option>
+                <option value="3">3명</option>
+                <option value="4">4명</option>
+              </select>
+            </label>
+            <label class="inline-field">
+              <span>환율 ₱→₩</span>
+              <input id="golfRate" inputmode="decimal" aria-label="환율" placeholder="26.675" />
+            </label>
+          </div>
+          <div class="golf-rounds" id="golfRounds"></div>
+          <div class="golf-summary" id="golfSummary"></div>
+          <details class="golf-ref">
+            <summary>골프장 요금표 보기</summary>
+            <div class="golf-ref-table" id="golfRefTable"></div>
+          </details>
+        </section>
+      </section>
+
+      <section class="notes-view is-hidden" aria-label="메모">
+        <section class="panel" aria-labelledby="memoTitle">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Notes</p>
+              <h2 id="memoTitle">메모</h2>
+            </div>
+          </div>
+          <p class="memo-hint">텍스트를 자유롭게 작성하고, 이미지는 복사해서 <strong>붙여넣기(Ctrl+V)</strong>하면 본문에 바로 삽입됩니다.</p>
+          <div class="memo-editor" id="memoNotes" contenteditable="true" role="textbox" aria-multiline="true" aria-label="메모" data-placeholder="출발 전 준비물, 특이사항 등 기억해 둘 내용을 자유롭게 적고, 이미지는 붙여넣으세요."></div>
+        </section>
+      </section>
+
+      <section class="data-tools" aria-label="데이터 관리">
+        <button class="data-button is-primary" id="pdfButton" type="button">PDF로 저장 / 공유</button>
+        <button class="data-button" id="exportButton" type="button">백업 내보내기</button>
+        <button class="data-button" id="importButton" type="button">백업 가져오기</button>
+        <button class="data-button is-danger" id="resetButton" type="button">기본값으로 초기화</button>
+        <input id="importInput" type="file" accept="application/json,.json" hidden />
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
