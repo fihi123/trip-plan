@@ -79,6 +79,7 @@ const memoHtmlStorageKey = "clark-memo-html-v2"; // v2: 메모 기본값을 빈 
 const golfStorageKey = "clark-golf-v1";
 const tripStorageKey = "clark-trip-v1";
 const ratesStorageKey = "clark-rates-v1";
+const extraSpendStorageKey = "clark-extra-spend-v1";
 
 const state = {
   day: "1",
@@ -91,6 +92,7 @@ let memoHtml = localStorage.getItem(memoHtmlStorageKey) || "";
 let trip = loadTrip();
 let golf = loadGolf();
 let rates = loadRates();
+let extraSpends = loadStoredArray(extraSpendStorageKey);
 
 // === 저장값 로더 ===
 function loadStoredObject(key) {
@@ -179,6 +181,12 @@ function isoDowKr(iso) {
   return DOW_KR[new Date(y, m - 1, d).getDay()];
 }
 
+function isoDiffDays(a, b) {
+  const [ay, am, ad] = a.split("-").map(Number);
+  const [by, bm, bd] = b.split("-").map(Number);
+  return Math.round((new Date(by, bm - 1, bd) - new Date(ay, am - 1, ad)) / 86400000);
+}
+
 // === DOM 참조 ===
 const timeline = document.querySelector("#timeline");
 const daySegments = document.querySelector("#daySegments");
@@ -196,6 +204,8 @@ const fetchRatesButton = document.querySelector("#fetchRatesButton");
 const ratesUpdated = document.querySelector("#ratesUpdated");
 const spendSummary = document.querySelector("#spendSummary");
 const spendBreakdown = document.querySelector("#spendBreakdown");
+const extraSpendList = document.querySelector("#extraSpendList");
+const addSpendButton = document.querySelector("#addSpendButton");
 const golfPeople = document.querySelector("#golfPeople");
 const golfRounds = document.querySelector("#golfRounds");
 const golfSummary = document.querySelector("#golfSummary");
@@ -243,6 +253,24 @@ function saveGolf() {
 
 function saveRates() {
   localStorage.setItem(ratesStorageKey, JSON.stringify(rates));
+}
+
+function saveExtraSpends() {
+  localStorage.setItem(extraSpendStorageKey, JSON.stringify(extraSpends));
+}
+
+// 선결제 등 통화별 금액을 페소 기준으로 환산 (KRW/USD → PHP)
+const spendCurrencies = ["KRW", "PHP", "USD"];
+
+function spendCurrencyOf(item) {
+  return spendCurrencies.includes(item.currency) ? item.currency : "KRW";
+}
+
+function toPhp(amount, currency) {
+  const value = Number(amount || 0);
+  if (currency === "PHP") return value;
+  if (currency === "USD") return rates.phpToUsd > 0 ? value / rates.phpToUsd : 0;
+  return rates.phpToKrw > 0 ? value / rates.phpToKrw : 0;
 }
 
 function saveMemo() {
@@ -440,7 +468,13 @@ function spendItems() {
       amount: breakdown.total,
     };
   });
-  return [...fromEvents, ...fromGolf];
+  const fromExtra = extraSpends.map((item) => ({
+    name: item.name || "(선결제)",
+    day: 0,
+    category: eventCategories.includes(item.category) ? item.category : "기타",
+    amount: toPhp(item.amount, spendCurrencyOf(item)),
+  }));
+  return [...fromEvents, ...fromGolf, ...fromExtra];
 }
 
 function spendRows(map) {
@@ -452,11 +486,8 @@ function renderSpend() {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
 
   spendSummary.innerHTML = `
-    <div class="golf-stat is-grand">
-      <span>전체 예상 지출 (일정 + 골프)</span>
-      <strong>${phpText(total)}</strong>
-      <small>${krwText(total)} · ${usdText(total)}</small>
-    </div>
+    <span class="spend-total-bar__label">전체 예상 지출 (일정 + 골프)</span>
+    <span class="spend-total-bar__amounts"><strong>${phpText(total)}</strong> · ${krwText(total)} · ${usdText(total)}</span>
   `;
 
   const byCategory = new Map();
@@ -489,7 +520,7 @@ function renderSpend() {
     <table>
       <thead><tr><th>일차</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
       <tbody>
-        ${days.map((day) => `<tr><td class="golf-ref__name">${day ? `${day}일차` : "미지정"}</td>${moneyCells(byDay.get(day))}</tr>`).join("")}
+        ${days.map((day) => `<tr><td class="golf-ref__name">${day ? `${day}일차` : "선결제"}</td>${moneyCells(byDay.get(day))}</tr>`).join("")}
         <tr class="spend-total-row"><td class="golf-ref__name">합계</td>${moneyCells(total)}</tr>
       </tbody>
     </table>
@@ -498,10 +529,41 @@ function renderSpend() {
     <table>
       <thead><tr><th>일차</th><th>항목</th><th>분류</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
       <tbody>
-        ${detailRows.map((item) => `<tr><td>${item.day ? `${item.day}일차` : "-"}</td><td class="golf-ref__name">${html(item.name)}</td><td>${html(item.category)}</td>${moneyCells(item.amount)}</tr>`).join("")}
+        ${detailRows.map((item) => `<tr><td>${item.day ? `${item.day}일차` : "선결제"}</td><td class="golf-ref__name">${html(item.name)}</td><td>${html(item.category)}</td>${moneyCells(item.amount)}</tr>`).join("")}
       </tbody>
     </table>
   `;
+}
+
+// === 선결제 / 기타 지출 (추가·삭제·통화 선택) ===
+function renderExtraSpends() {
+  const categoryOptions = (selected) => eventCategories.map((name) =>
+    `<option value="${name}" ${name === selected ? "selected" : ""}>${name}</option>`
+  ).join("");
+  const currencyLabels = { KRW: "₩ 원", PHP: "₱ 페소", USD: "$ 달러" };
+  const currencyOptions = (selected) => spendCurrencies.map((code) =>
+    `<option value="${code}" ${code === selected ? "selected" : ""}>${currencyLabels[code]}</option>`
+  ).join("");
+
+  extraSpendList.innerHTML = extraSpends.map((item) => {
+    const currency = spendCurrencyOf(item);
+    const php = toPhp(item.amount, currency);
+    const category = eventCategories.includes(item.category) ? item.category : "기타";
+    return `
+      <div class="spend-item" data-spend-id="${html(item.id)}">
+        <input class="spend-item__name" data-spend-field="name" aria-label="항목" placeholder="예: 항공료, 숙소 선결제" value="${html(item.name || "")}" />
+        <select data-spend-field="category" aria-label="분류">${categoryOptions(category)}</select>
+        <select data-spend-field="currency" aria-label="통화">${currencyOptions(currency)}</select>
+        <input class="spend-item__amount" data-spend-field="amount" inputmode="numeric" aria-label="금액" value="${html(item.amount || "")}" />
+        <span class="spend-item__conv">≈ ${phpText(php)} · ${krwText(php)} · ${usdText(php)}</span>
+        <button class="delete-inline delete-spend" type="button" aria-label="삭제">×</button>
+      </div>
+    `;
+  }).join("");
+
+  if (!extraSpends.length) {
+    extraSpendList.innerHTML = `<p class="meta">미리 결제한 항공료·숙소·골프 등을 "추가"로 넣으면 지출 합계에 반영됩니다.</p>`;
+  }
 }
 
 // === 환율 ===
@@ -524,6 +586,7 @@ async function fetchRates() {
     rates.updatedAt = data.time_last_update_utc || new Date().toLocaleString("ko-KR");
     saveRates();
     renderRates();
+    renderExtraSpends();
     renderSpend();
     renderGolf();
   } catch (error) {
@@ -739,13 +802,14 @@ function renderAll() {
   renderTimeline();
   renderMemo();
   renderRates();
+  renderExtraSpends();
   renderSpend();
   renderGolf();
   renderView();
 }
 
 // === 백업 / 가져오기 / 초기화 ===
-const backupKeys = [eventStorageKey, memoHtmlStorageKey, golfStorageKey, tripStorageKey, ratesStorageKey];
+const backupKeys = [eventStorageKey, memoHtmlStorageKey, golfStorageKey, tripStorageKey, ratesStorageKey, extraSpendStorageKey];
 
 function exportData() {
   const data = { version: 2, exportedAt: new Date().toISOString() };
@@ -867,37 +931,76 @@ async function extractPdfText(file) {
 
 const PDF_MONTHS = { JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12 };
 
-// 항공권 텍스트에서 DDMMMYY 날짜를 찾아 출국(가장 이른 날)·귀국(가장 늦은 날)을 추정한다.
-// '25JUL26 (SAT)'처럼 요일이 붙은 출발일을 우선 사용하고, 없으면 모든 날짜의 최소/최대를 쓴다.
+function pdfToIso(dd, mmm, yy) {
+  const month = PDF_MONTHS[mmm];
+  if (!month) return null;
+  return `20${yy}-${String(month).padStart(2, "0")}-${dd}`;
+}
+
+// 구간 머리말에서 출발/도착 공항(영문 대문자 도시명)을 뽑아낸다. 직전 구간 도착지를
+// 이번 구간 출발지로 맞춰 SEOUL INCHEON 같은 2단어 공항도 경계를 바르게 가른다.
+const PDF_CITY_NOISE = new Set(["NOT", "VALID", "BEFORE", "AFTER", "FARE", "BASIS", "VIA", "OPERATED", "MARKETED", "FREE", "BAGGAGE", "ALLOWANCE", "LAYOVER", "OK", "PC", "KRW", "CASH", "SEAT", "CLASS", "STATUS", "DATE", "FROM", "FLIGHT", "ARRIVAL", "DEPARTURE", "RESERVATION", "TERMINAL", "AIRLINES", "ASIANA"]);
+
+function pdfCityTokens(window) {
+  const cleaned = window
+    .replace(/\d{2}[A-Z]{3}\d{2}/g, " ")
+    .replace(/Fare Basis\s+\S+/gi, " ")
+    .replace(/Terminal\s*\d+/gi, " ")
+    .replace(/[A-Z]{2}\d{3,4}/g, " ")
+    .replace(/\b\d{1,2}:\d{2}\b/g, " ");
+  return (cleaned.match(/[A-Z]{3,}/g) || []).filter((token) => !PDF_CITY_NOISE.has(token));
+}
+
+// 전자항공권에서 항공편(편명·날짜·출발/도착 시각·구간)과 총 항공료(KRW)를 추출한다.
 function parseItinerary(text) {
-  const toIso = (dd, mmm, yy) => {
-    const month = PDF_MONTHS[mmm];
-    if (!month) return null;
-    return `20${yy}-${String(month).padStart(2, "0")}-${dd}`;
-  };
-  const dated = [];
-  const anchored = /(\d{2})([A-Z]{3})(\d{2})\s*\((?:MON|TUE|WED|THU|FRI|SAT|SUN)\)/g;
+  const flightRe = /([A-Z]{2}\d{3,4})\s+[A-Z]\s+(\d{2})([A-Z]{3})(\d{2})\s*\((?:MON|TUE|WED|THU|FRI|SAT|SUN)\)\s*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s*(\+\d)?/g;
+  const flights = [];
   let match;
-  while ((match = anchored.exec(text))) {
-    const iso = toIso(match[1], match[2], match[3]);
-    if (iso) dated.push(iso);
+  let lastIndex = 0;
+  let prevDest = null;
+  while ((match = flightRe.exec(text))) {
+    const iso = pdfToIso(match[2], match[3], match[4]);
+    if (!iso) continue;
+    const tokens = pdfCityTokens(text.slice(lastIndex, match.index));
+    const joined = tokens.join(" ");
+    let origin = "";
+    let dest = "";
+    if (prevDest && joined.startsWith(prevDest)) {
+      origin = prevDest;
+      dest = joined.slice(prevDest.length).trim();
+    } else if (tokens.length >= 2) {
+      origin = tokens.slice(0, -1).join(" ");
+      dest = tokens[tokens.length - 1];
+    }
+    prevDest = dest || prevDest;
+    flights.push({
+      flightNo: match[1],
+      dateIso: iso,
+      dep: match[5],
+      arr: match[6],
+      off: match[7] || "",
+      route: origin && dest ? `${origin}→${dest}` : "",
+    });
+    lastIndex = flightRe.lastIndex;
   }
-  if (dated.length < 1) {
+
+  // 출국/귀국 날짜: 항공편이 있으면 그 날짜, 없으면 DDMMMYY 토큰의 최소/최대
+  let dates = flights.map((flight) => flight.dateIso);
+  if (!dates.length) {
     const loose = /\b(\d{2})([A-Z]{3})(\d{2})\b/g;
     while ((match = loose.exec(text))) {
-      const iso = toIso(match[1], match[2], match[3]);
-      if (iso) dated.push(iso);
+      const iso = pdfToIso(match[1], match[2], match[3]);
+      if (iso) dates.push(iso);
     }
   }
-  if (!dated.length) return null;
-  const sorted = [...dated].sort();
+  if (!dates.length) return null;
+  const sorted = [...dates].sort();
   const startDate = sorted[0];
   const endDate = sorted[sorted.length - 1];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const days = Math.round((end - start) / 86400000) + 1;
-  const flights = (text.match(/\b[A-Z]{2}\d{3,4}\b/g) || []).filter((value, index, list) => list.indexOf(value) === index);
-  return { startDate, endDate, days: Math.max(1, Math.min(60, days)), nights: Math.max(0, days - 1), flights };
+  const days = Math.max(1, Math.min(60, isoDiffDays(startDate, endDate) + 1));
+  const fareMatch = text.match(/Total Amount\s*KRW\s*([\d,]+)/i) || text.match(/합계\D*KRW\s*([\d,]+)/);
+  const airfareKrw = fareMatch ? Number(fareMatch[1].replace(/,/g, "")) : 0;
+  return { startDate, endDate, days, nights: Math.max(0, days - 1), flights, airfareKrw };
 }
 
 async function importItineraryPdf(file) {
@@ -911,21 +1014,48 @@ async function importItineraryPdf(file) {
       alert("여정에서 날짜를 찾지 못했습니다. 텍스트 기반 PDF(전자항공권)인지 확인하거나 기간을 직접 입력해 주세요.");
       return;
     }
-    const flightText = result.flights.length ? `\n항공편: ${result.flights.join(", ")}` : "";
+    const flightLines = result.flights.map((flight) =>
+      `  ✈ ${flight.flightNo} ${flight.route || ""} ${flight.dateIso.slice(5)} ${flight.dep}→${flight.arr}${flight.off ? `(${flight.off})` : ""}`
+    );
+    const airfarePhp = result.airfareKrw && rates.phpToKrw > 0 ? Math.round(result.airfareKrw / rates.phpToKrw) : 0;
     const ok = confirm(
-      `여정 인식 결과${flightText}\n` +
+      `여정 인식 결과\n` +
       `출국: ${result.startDate} (${isoDowKr(result.startDate)})\n` +
       `귀국: ${result.endDate} (${isoDowKr(result.endDate)})\n` +
-      `→ ${result.nights}박 ${result.days}일로 설정할까요?`
+      `→ ${result.nights}박 ${result.days}일\n` +
+      (flightLines.length ? `\n비행편 ${result.flights.length}개를 일정에 추가:\n${flightLines.join("\n")}\n` : "") +
+      (result.airfareKrw ? `\n항공료: ₩${result.airfareKrw.toLocaleString("ko-KR")} (≈ ${phpText(airfarePhp)})\n` : "") +
+      `\n적용할까요? (기존에 불러온 비행/항공료 항목은 새로 교체됩니다)`
     );
     if (!ok) return;
+
     trip.startDate = result.startDate;
     trip.endDate = result.endDate;
     trip.days = result.days;
     trip.nights = result.nights;
     saveTrip();
+
+    // 이전에 PDF로 넣은 항목(비행 일정/항공료)을 지우고 새로 추가한다.
+    events = events.filter((event) => !event.fromPdf);
+    extraSpends = extraSpends.filter((item) => !item.fromPdf);
+    const stamp = Date.now();
+    result.flights.forEach((flight, index) => {
+      const tripDay = Math.max(1, isoDiffDays(result.startDate, flight.dateIso) + 1);
+      const label = result.flights.length > 1 ? (index === 0 ? "출국" : index === result.flights.length - 1 ? "귀국" : "비행") : "비행";
+      const name = `✈ ${flight.flightNo} ${label}${flight.route ? ` ${flight.route}` : ""}${flight.off ? ` (${flight.off} 도착)` : ""}`;
+      events.push({ id: `flight-${stamp}-${index}`, day: tripDay, name, start: flight.dep, end: flight.arr, budget: 0, category: "교통", fromPdf: true });
+    });
+    // 항공료는 선결제(원화) 항목으로 추가
+    if (result.airfareKrw > 0) {
+      const flightNos = result.flights.map((flight) => flight.flightNo).join("/");
+      extraSpends.push({ id: `airfare-${stamp}`, name: `✈ 항공료${flightNos ? ` (${flightNos})` : ""}`, category: "교통", currency: "KRW", amount: result.airfareKrw, fromPdf: true });
+    }
+    saveEvents();
+    saveExtraSpends();
     renderTrip();
     renderTimeline();
+    renderExtraSpends();
+    renderSpend();
   } catch (error) {
     alert("PDF를 읽지 못했습니다. 인터넷 연결(최초 1회 라이브러리 다운로드)을 확인하거나, 스캔본이 아닌 전자항공권 PDF인지 확인해 주세요.");
   } finally {
@@ -1027,6 +1157,7 @@ ratePhpKrw.addEventListener("input", () => {
   rates.updatedAt = "";
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
+  renderExtraSpends();
   renderSpend();
   renderGolf();
 });
@@ -1037,11 +1168,66 @@ ratePhpUsd.addEventListener("input", () => {
   rates.updatedAt = "";
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
+  renderExtraSpends();
   renderSpend();
   renderGolf();
 });
 
 fetchRatesButton.addEventListener("click", fetchRates);
+
+function findExtraSpend(target) {
+  const card = target.closest(".spend-item");
+  return card ? extraSpends.find((item) => item.id === card.dataset.spendId) : null;
+}
+
+addSpendButton.addEventListener("click", () => {
+  const id = `spend-${Date.now()}-${extraSpends.length + 1}`;
+  extraSpends.push({ id, name: "", category: "기타", currency: "KRW", amount: 0 });
+  saveExtraSpends();
+  renderExtraSpends();
+  renderSpend();
+  requestAnimationFrame(() => {
+    document.querySelector(`[data-spend-id="${CSS.escape(id)}"] .spend-item__name`)?.focus();
+  });
+});
+
+extraSpendList.addEventListener("input", (event) => {
+  const field = event.target.dataset.spendField;
+  if (field !== "name" && field !== "amount") return; // 분류·통화 select는 change에서 처리
+  const item = findExtraSpend(event.target);
+  if (!item) return;
+  item[field] = field === "amount" ? Number(event.target.value || 0) : event.target.value;
+  saveExtraSpends();
+  if (field === "amount") {
+    const php = toPhp(item.amount, spendCurrencyOf(item));
+    const conv = event.target.closest(".spend-item").querySelector(".spend-item__conv");
+    if (conv) conv.textContent = `≈ ${phpText(php)} · ${krwText(php)} · ${usdText(php)}`;
+  }
+  renderSpend();
+});
+
+extraSpendList.addEventListener("change", (event) => {
+  const field = event.target.dataset.spendField;
+  if (field !== "category" && field !== "currency") return;
+  const item = findExtraSpend(event.target);
+  if (!item) return;
+  item[field] = event.target.value;
+  saveExtraSpends();
+  renderExtraSpends();
+  renderSpend();
+});
+
+extraSpendList.addEventListener("click", (event) => {
+  const button = event.target.closest(".delete-spend");
+  if (!button) return;
+  const item = findExtraSpend(button);
+  if (!item) return;
+  if (!confirm(`${item.name || "이 항목"}을(를) 삭제할까요?`)) return;
+  extraSpends = extraSpends.filter((entry) => entry.id !== item.id);
+  saveExtraSpends();
+  renderExtraSpends();
+  renderSpend();
+});
 
 // 골프는 일정·지출에도 반영되므로 변경 시 함께 다시 그린다.
 function renderGolfLinked() {

@@ -64,9 +64,16 @@
             <button class="small-action" id="fetchRatesButton" type="button">환율 자동 갱신</button>
             <span class="rates__updated" id="ratesUpdated"></span>
           </div>
-          <div class="golf-summary" id="spendSummary"></div>
+          <div class="spend-total-bar" id="spendSummary"></div>
+
+          <div class="spend-subtitle">
+            <h3 class="spend-heading">선결제 / 기타 지출</h3>
+            <button class="small-action" id="addSpendButton" type="button">추가</button>
+          </div>
+          <div class="extra-spend-list" id="extraSpendList"></div>
+
           <div class="golf-ref-table" id="spendBreakdown"></div>
-          <p class="memo-hint">금액은 일정 탭의 각 항목 예산을 합산한 값입니다. 골프 비용은 골프 탭에서 따로 계산됩니다.</p>
+          <p class="memo-hint">합계는 일정 항목 예산 + 골프(1인) + 선결제 항목을 모두 더한 값입니다. 통화가 달라도 환율로 환산해 합산됩니다.</p>
         </section>
       </section>
 
