@@ -434,6 +434,84 @@ body.saved-mode .segments {
   display: none;
 }
 
+/* 여행 기간 입력 (몇 박 몇 일) */
+.trip-duration {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trip-duration label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.trip-duration input {
+  width: 52px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 8px;
+  color: var(--ink);
+  background: var(--panel);
+  text-align: center;
+  font-weight: 800;
+  outline: none;
+}
+
+.trip-duration input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+}
+
+/* 환율 입력 */
+.rates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rates .inline-field {
+  flex: 0 1 180px;
+}
+
+.rates input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--field);
+  outline: none;
+}
+
+.rates input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+}
+
+.rates__updated,
+.rates__hint {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.spend-total-row td {
+  font-weight: 900;
+  border-top: 2px solid var(--line);
+  color: var(--ink);
+}
+
 /* ⛳ 골프 비용 계산기 */
 .golf-view {
   margin-top: 18px;
@@ -698,7 +776,7 @@ body.saved-mode .segments {
 
 .event-card {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) 104px 34px;
+  grid-template-columns: minmax(0, 1fr) 104px 34px;
   gap: 12px;
   align-items: start;
   padding: 12px;
@@ -1036,7 +1114,7 @@ body.compact .place-name {
   }
 
   .event-card {
-    grid-template-columns: 70px minmax(0, 1fr) 98px 34px;
+    grid-template-columns: minmax(0, 1fr) 98px 34px;
   }
 
   .event-editor {
@@ -1098,16 +1176,14 @@ body.compact .place-name {
     align-items: start;
   }
 
-  .day-field {
-    grid-column: 1 / 2;
+  .event-main {
+    grid-column: 1 / -1;
   }
 
   .event-editor {
-    grid-column: 1 / -1;
     grid-template-columns: 1fr 1fr;
   }
 
-  .event-editor .event-day-input,
   .event-editor .event-name-input {
     grid-column: 1 / -1;
   }
@@ -1119,7 +1195,7 @@ body.compact .place-name {
 
   .event-card .delete-inline {
     grid-column: 2;
-    grid-row: 3;
+    grid-row: 2;
   }
 
   .price {
@@ -1144,7 +1220,7 @@ body.compact .place-name {
 
   /* 모든 탭 내용을 한 문서에 펼쳐 보인다 */
   .guide-view,
-  .saved-view,
+  .spend-view,
   .golf-view,
   .notes-view {
     display: block !important;

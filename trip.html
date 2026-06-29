@@ -12,24 +12,14 @@
       <nav class="topbar" aria-label="주요 메뉴">
         <strong>My Clark Trip</strong>
         <h1 class="topbar__title">클락(앙헬레스) 여행 플래너</h1>
-        <div class="hero__stats guide-view" aria-label="여행 요약">
-          <span><b id="heroDays">4일</b> 일정</span>
+        <div class="trip-duration guide-view" aria-label="여행 기간">
+          <label><input id="tripNights" type="number" min="0" max="60" inputmode="numeric" aria-label="박 수" /> 박</label>
+          <label><input id="tripDays" type="number" min="1" max="60" inputmode="numeric" aria-label="일 수" /> 일</label>
         </div>
-        <div class="segments guide-view" role="tablist" aria-label="일차 선택">
-          <button class="segment is-active" type="button" data-day="all">전체</button>
-          <button class="segment" type="button" data-day="1">1일차</button>
-          <button class="segment" type="button" data-day="2">2일차</button>
-          <button class="segment" type="button" data-day="3">3일차</button>
-          <button class="segment" type="button" data-day="4">4일차</button>
-        </div>
-        <div class="spend-amounts guide-view" aria-label="예상 지출">
-          <span>예상 지출</span>
-          <strong id="metricSpend">₱63,300</strong>
-          <strong id="metricSpendKrw">₩1,688,528</strong>
-        </div>
+        <div class="segments guide-view" id="daySegments" role="tablist" aria-label="일차 선택"></div>
         <div class="topbar__tabs" role="tablist" aria-label="페이지 선택">
           <button class="top-tab is-active" type="button" data-view="guide">일정</button>
-          <button class="top-tab" type="button" data-view="saved">장소</button>
+          <button class="top-tab" type="button" data-view="spend">지출</button>
           <button class="top-tab" type="button" data-view="golf">골프</button>
           <button class="top-tab" type="button" data-view="notes">메모</button>
         </div>
@@ -51,20 +41,29 @@
         <div class="timeline" id="timeline"></div>
       </section>
 
-      <section class="saved-view is-hidden" aria-labelledby="savedTitle">
+      <section class="spend-view is-hidden" aria-labelledby="spendTitle">
         <section class="panel">
           <div class="section-title">
             <div>
-              <p class="eyebrow">Google Maps</p>
-              <h2 id="savedTitle">장소</h2>
-            </div>
-            <div class="section-actions">
-              <button class="small-action" id="addPlaceButton" type="button">추가</button>
-              <a class="map-link" href="https://maps.app.goo.gl/t8CPWQw8J5znChTDA" target="_blank" rel="noreferrer">원본 지도</a>
+              <p class="eyebrow">Budget</p>
+              <h2 id="spendTitle">지출 내역</h2>
             </div>
           </div>
-          <div class="category-strip" id="categoryStrip" aria-label="장소 카테고리"></div>
-          <div class="saved-grid" id="savedGrid"></div>
+          <div class="rates">
+            <label class="inline-field">
+              <span>₱ → ₩ (원/페소)</span>
+              <input id="ratePhpKrw" inputmode="decimal" aria-label="페소당 원화" />
+            </label>
+            <label class="inline-field">
+              <span>₱ → $ (달러/페소)</span>
+              <input id="ratePhpUsd" inputmode="decimal" aria-label="페소당 달러" />
+            </label>
+            <button class="small-action" id="fetchRatesButton" type="button">환율 자동 갱신</button>
+            <span class="rates__updated" id="ratesUpdated"></span>
+          </div>
+          <div class="golf-summary" id="spendSummary"></div>
+          <div class="golf-ref-table" id="spendBreakdown"></div>
+          <p class="memo-hint">금액은 일정 탭의 각 항목 예산을 합산한 값입니다. 골프 비용은 골프 탭에서 따로 계산됩니다.</p>
         </section>
       </section>
 
@@ -88,10 +87,7 @@
                 <option value="4">4명</option>
               </select>
             </label>
-            <label class="inline-field">
-              <span>환율 ₱→₩</span>
-              <input id="golfRate" inputmode="decimal" aria-label="환율" placeholder="26.675" />
-            </label>
+            <span class="rates__hint">환율은 지출 탭에서 설정합니다.</span>
           </div>
           <div class="golf-rounds" id="golfRounds"></div>
           <div class="golf-summary" id="golfSummary"></div>
