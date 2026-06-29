@@ -80,6 +80,21 @@ const golfStorageKey = "clark-golf-v1";
 const tripStorageKey = "clark-trip-v1";
 const ratesStorageKey = "clark-rates-v1";
 const extraSpendStorageKey = "clark-extra-spend-v1";
+const seededKey = "clark-seeded-v1";
+// 이 버전에서 1회 기존 데이터 전체 삭제 (사용자 요청). 값을 바꾸면 다시 1회 삭제된다.
+const purgeKey = "clark-purge-v2";
+
+const backupKeys = [eventStorageKey, memoHtmlStorageKey, golfStorageKey, tripStorageKey, ratesStorageKey, extraSpendStorageKey];
+
+// 최초 1회: 기존에 저장돼 있던 데이터를 모두 비우고 빈 상태로 시작한다.
+if (!localStorage.getItem(purgeKey)) {
+  backupKeys.forEach((key) => localStorage.removeItem(key));
+  localStorage.setItem(seededKey, "done");
+  localStorage.setItem(purgeKey, "done");
+}
+
+// 시드 완료 표시가 있으면 비어 있어도 기본 일정을 다시 만들지 않는다(완전 초기화 후 빈 상태 유지).
+const seeded = localStorage.getItem(seededKey) === "done";
 
 const state = {
   day: "1",
@@ -87,12 +102,19 @@ const state = {
 };
 
 let events = loadStoredArray(eventStorageKey);
-if (!events.length) events = baseEvents.map((event, index) => ({ ...event, id: `event-${index + 1}` }));
+if (!events.length && !seeded) events = baseEvents.map((event, index) => ({ ...event, id: `event-${index + 1}` }));
 let memoHtml = localStorage.getItem(memoHtmlStorageKey) || "";
 let trip = loadTrip();
 let golf = loadGolf();
 let rates = loadRates();
 let extraSpends = loadStoredArray(extraSpendStorageKey);
+
+// 최초 실행(시드 전)에만 기본 일정/골프를 저장해 두고, 이후에는 빈 상태가 기본이 되도록 표시한다.
+if (!seeded) {
+  localStorage.setItem(eventStorageKey, JSON.stringify(events));
+  localStorage.setItem(golfStorageKey, JSON.stringify(golf));
+  localStorage.setItem(seededKey, "done");
+}
 
 // === 저장값 로더 ===
 function loadStoredObject(key) {
@@ -125,14 +147,15 @@ function loadTrip() {
 function loadGolf() {
   const stored = loadStoredObject(golfStorageKey);
   const people = [2, 3, 4].includes(Number(stored.people)) ? Number(stored.people) : defaultGolf.people;
-  const rounds = Array.isArray(stored.rounds) && stored.rounds.length
+  const hasStoredRounds = Array.isArray(stored.rounds) && stored.rounds.length;
+  const rounds = hasStoredRounds
     ? stored.rounds.map((round, index) => ({
         id: round.id || `round-${index + 1}`,
         course: golfCourses.some((course) => course.id === round.course) ? round.course : golfCourses[0].id,
         day: round.day === "주중" ? "주중" : "주말",
         tripDay: Number(round.tripDay) >= 1 ? Math.round(Number(round.tripDay)) : 1,
       }))
-    : defaultGolf.rounds.map((round) => ({ ...round }));
+    : (seeded ? [] : defaultGolf.rounds.map((round) => ({ ...round })));
   // 요금표 수정값: { 골프장id: { name?, weekday?, ... } } 형태만 받아들인다.
   const courseEdits = {};
   const storedEdits = stored.courseEdits && typeof stored.courseEdits === "object" ? stored.courseEdits : {};
@@ -809,8 +832,6 @@ function renderAll() {
 }
 
 // === 백업 / 가져오기 / 초기화 ===
-const backupKeys = [eventStorageKey, memoHtmlStorageKey, golfStorageKey, tripStorageKey, ratesStorageKey, extraSpendStorageKey];
-
 function exportData() {
   const data = { version: 2, exportedAt: new Date().toISOString() };
   backupKeys.forEach((key) => {
@@ -855,9 +876,12 @@ function importData(file) {
   reader.readAsText(file);
 }
 
+// 완전 초기화: 일정·지출·골프·메모·여행기간·환율을 모두 삭제하고 빈 상태로 시작한다.
 function resetData() {
-  if (!confirm("모든 편집 내용을 지우고 기본값으로 되돌릴까요? 되돌릴 수 없습니다.")) return;
+  if (!confirm("모든 데이터(일정·지출·골프·메모·여행기간·환율)를 완전히 삭제할까요? 되돌릴 수 없습니다.")) return;
   backupKeys.forEach((key) => localStorage.removeItem(key));
+  localStorage.setItem(seededKey, "done");
+  localStorage.setItem(purgeKey, "done");
   location.reload();
 }
 
