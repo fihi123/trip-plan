@@ -236,6 +236,8 @@ const timeline = document.querySelector("#timeline");
 const daySegments = document.querySelector("#daySegments");
 const visibleCount = document.querySelector("#visibleCount");
 const addEventButton = document.querySelector("#addEventButton");
+const copyDayButton = document.querySelector("#copyDayButton");
+const pasteDayButton = document.querySelector("#pasteDayButton");
 const tripNights = document.querySelector("#tripNights");
 const tripDays = document.querySelector("#tripDays");
 const tripDates = document.querySelector("#tripDates");
@@ -1361,6 +1363,53 @@ addEventButton.addEventListener("click", () => {
     card?.scrollIntoView({ block: "center", behavior: "smooth" });
     card?.querySelector("[data-event-field='start']")?.focus();
   });
+});
+
+// 일차 단위 복사/붙여넣기 — 한 일차의 일정 전체를 복사해 다른 일차에 그대로 추가한다.
+// (골프 라운드는 골프 탭에서 일차를 지정하는 별도 항목이라 복사 대상에서 제외한다.)
+const COPY_FIELDS = ["name", "start", "end", "budget", "category", "categoryCustom"];
+let dayClipboard = null; // { day, items: [...] }
+
+function refreshPasteButton() {
+  if (!pasteDayButton) return;
+  if (!dayClipboard || !dayClipboard.items.length) {
+    pasteDayButton.hidden = true;
+    return;
+  }
+  pasteDayButton.hidden = false;
+  pasteDayButton.textContent = `${dayClipboard.day}일차 붙여넣기 (${dayClipboard.items.length})`;
+}
+
+copyDayButton?.addEventListener("click", () => {
+  const day = state.day;
+  const dayItems = sortDayEvents(events.filter((entry) => String(entry.day) === String(day)));
+  if (!dayItems.length) {
+    alert(`${day}일차에 복사할 일정이 없습니다.`);
+    return;
+  }
+  dayClipboard = {
+    day,
+    items: dayItems.map((entry) => {
+      const copy = {};
+      COPY_FIELDS.forEach((field) => {
+        if (entry[field] !== undefined) copy[field] = entry[field];
+      });
+      return copy;
+    }),
+  };
+  refreshPasteButton();
+});
+
+pasteDayButton?.addEventListener("click", () => {
+  if (!dayClipboard || !dayClipboard.items.length) return;
+  const day = Number(state.day) || 1;
+  dayClipboard.items.forEach((source, index) => {
+    const id = `event-${Date.now()}-${events.length + 1 + index}`;
+    events.push({ ...source, id, day });
+  });
+  saveEvents();
+  renderTimeline();
+  renderSpend();
 });
 
 memoField.addEventListener("input", () => {
