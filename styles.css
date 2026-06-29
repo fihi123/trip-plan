@@ -950,11 +950,24 @@ body.saved-mode .segments {
 }
 
 .event-editor .inline-field {
-  flex: 1 1 90px;
+  flex: 1 1 84px;
 }
 
+/* 한 줄에 들어가도록 폭을 줄인다: 이름(넓게) · 시작 · 종료 · 분류 */
 .event-editor .event-name-input {
-  flex: 1 1 100%;
+  flex: 3 1 130px;
+}
+
+.event-editor .event-time {
+  flex: 0 1 76px;
+}
+
+.event-editor .event-cat {
+  flex: 1 1 92px;
+}
+
+.event-editor .event-cat-custom {
+  flex: 1 1 110px;
 }
 
 .inline-field,
@@ -1516,7 +1529,7 @@ body.compact .place-name {
   }
 
   .event-editor .event-name-input {
-    grid-column: 1 / -1;
+    flex: 1 1 100%;
   }
 
   .event-card .money-field {

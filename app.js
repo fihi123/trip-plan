@@ -349,6 +349,13 @@ function eventCategory(event) {
   return eventCategories.includes(event.category) ? event.category : inferCategory(event);
 }
 
+// 분류 표시용 라벨 — "기타"이고 직접 입력값이 있으면 그 텍스트를 쓴다.
+function eventCategoryLabel(event) {
+  const category = eventCategory(event);
+  const custom = String(event.categoryCustom || "").trim();
+  return category === "기타" && custom ? custom : category;
+}
+
 // === 일정(타임라인) ===
 function eventKind(event) {
   const text = event.name.toLowerCase();
@@ -421,6 +428,7 @@ function renderTimeline() {
     const categoryOptions = eventCategories.map((name) =>
       `<option value="${name}" ${name === category ? "selected" : ""}>${name}</option>`
     ).join("");
+    const isCustom = category === "기타";
     card.innerHTML = `
       <div class="event-main">
         <div class="event-editor">
@@ -428,20 +436,24 @@ function renderTimeline() {
             <span>장소 / 내용</span>
             <input data-event-field="name" aria-label="일정명" value="${html(event.name)}" />
           </label>
-          <label class="inline-field">
+          <label class="inline-field event-time">
             <span>시작</span>
             <input data-event-field="start" aria-label="시작 시간" placeholder="10:00" value="${html(event.start || "")}" />
           </label>
-          <label class="inline-field">
+          <label class="inline-field event-time">
             <span>종료</span>
             <input data-event-field="end" aria-label="종료 시간" placeholder="11:00" value="${html(event.end || "")}" />
           </label>
           <label class="inline-field event-cat">
             <span>분류</span>
-            <select data-event-field="category" aria-label="지출 분류">${categoryOptions}</select>
+            <select data-event-field="category" aria-label="분류">${categoryOptions}</select>
           </label>
+          ${isCustom ? `
+          <label class="inline-field event-cat-custom">
+            <span>기타 분류</span>
+            <input data-event-field="categoryCustom" aria-label="기타 분류" placeholder="직접 입력" value="${html(event.categoryCustom || "")}" />
+          </label>` : ""}
         </div>
-        <div class="meta">${html(category)} · ${event.budget ? "예산 포함" : "이동/숙소"}</div>
       </div>
       <label class="inline-field money-field">
         <span>예산(₱)</span>
@@ -502,7 +514,7 @@ function spendItems() {
   const fromEvents = events.map((event) => ({
     name: event.name || "(이름 없음)",
     day: Number(event.day) || 0,
-    category: eventCategory(event),
+    category: eventCategoryLabel(event),
     amount: Number(event.budget || 0),
   }));
   const fromGolf = golf.rounds.map((round) => {
@@ -537,7 +549,9 @@ function renderSpend() {
   `;
 
   const byCategory = new Map();
-  eventCategories.forEach((category) => {
+  // 기본 분류 순서를 먼저, 그 뒤에 "기타" 직접 입력 분류를 이어 붙인다.
+  const customCats = [...new Set(items.map((item) => item.category))].filter((cat) => !eventCategories.includes(cat));
+  [...eventCategories, ...customCats].forEach((category) => {
     const sum = items.filter((item) => item.category === category).reduce((acc, item) => acc + item.amount, 0);
     if (sum > 0) byCategory.set(category, sum);
   });
@@ -1311,7 +1325,7 @@ timeline.addEventListener("input", (event) => {
   if (field === "category") {
     renderTimeline();
     renderSpend();
-  } else if (field === "budget") {
+  } else if (field === "budget" || field === "categoryCustom") {
     renderSpend();
   }
 });
