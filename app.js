@@ -66,11 +66,11 @@ const golfNumberFields = ["weekday", "weekend", "caddy", "cart2", "cart3", "cart
 
 const defaultGolf = {
   people: 4,
-  // day = 주중/주말, tripDay = 며칠차 일정에 넣을지
+  // day = 주중/주말, tripDay = 며칠차 일정에 넣을지, time = 티오프 시간
   rounds: [
-    { id: "round-1", course: "Luisita", day: "주말", tripDay: 2 },
-    { id: "round-2", course: "Pradera_May", day: "주말", tripDay: 3 },
-    { id: "round-3", course: "Korea", day: "주중", tripDay: 4 },
+    { id: "round-1", course: "Luisita", day: "주말", tripDay: 2, time: "06:30" },
+    { id: "round-2", course: "Pradera_May", day: "주말", tripDay: 3, time: "06:30" },
+    { id: "round-3", course: "Korea", day: "주중", tripDay: 4, time: "12:00" },
   ],
 };
 
@@ -83,6 +83,26 @@ const extraSpendStorageKey = "clark-extra-spend-v1";
 const seededKey = "clark-seeded-v1";
 // 이 버전에서 1회 기존 데이터 전체 삭제 (사용자 요청). 값을 바꾸면 다시 1회 삭제된다.
 const purgeKey = "clark-purge-v2";
+// 저장된 일정 목록(스냅샷)을 담는 로컬 키 — 클라우드 미설정 시 폴백 저장소
+const savedTripsKey = "clark-saved-trips-v1";
+
+// === 클라우드 저장소(Firebase Firestore) 설정 ===
+// 아래 firebaseConfig를 채우면 저장본이 클라우드 DB에 저장돼 어느 기기에서나 같은 목록을
+// 보고 동행자와 공유할 수 있습니다. 비워 두면 자동으로 이 브라우저 로컬 저장으로 동작합니다.
+// 설정 방법은 클라우드설정.md 참고. (빌드/SDK 없이 Firestore REST API를 직접 호출합니다.)
+const firebaseConfig = {
+  apiKey: "AIzaSyD1WOBbHn6HHBg-eKvy-lVjDSTHZwkgBus",
+  authDomain: "trip-plan-4b079.firebaseapp.com",
+  projectId: "trip-plan-4b079",
+  storageBucket: "trip-plan-4b079.firebasestorage.app",
+  messagingSenderId: "700766072620",
+  appId: "1:700766072620:web:b91b33d5756cbe1bde8689",
+  measurementId: "G-9QWWP9JBSL",
+};
+const FIRESTORE_COLLECTION = "saved_trips";
+const cloudOn = () => Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
+const firestoreBase = () =>
+  `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`;
 
 const backupKeys = [eventStorageKey, memoHtmlStorageKey, golfStorageKey, tripStorageKey, ratesStorageKey, extraSpendStorageKey];
 
@@ -154,6 +174,7 @@ function loadGolf() {
         course: golfCourses.some((course) => course.id === round.course) ? round.course : golfCourses[0].id,
         day: round.day === "주중" ? "주중" : "주말",
         tripDay: Number(round.tripDay) >= 1 ? Math.round(Number(round.tripDay)) : 1,
+        time: typeof round.time === "string" ? round.time : "",
       }))
     : (seeded ? [] : defaultGolf.rounds.map((round) => ({ ...round })));
   // 요금표 수정값: { 골프장id: { name?, weekday?, ... } } 형태만 받아들인다.
@@ -234,9 +255,11 @@ const golfRounds = document.querySelector("#golfRounds");
 const golfSummary = document.querySelector("#golfSummary");
 const golfRefTable = document.querySelector("#golfRefTable");
 const addRoundButton = document.querySelector("#addRoundButton");
-const exportButton = document.querySelector("#exportButton");
-const importButton = document.querySelector("#importButton");
-const importInput = document.querySelector("#importInput");
+const saveTripButton = document.querySelector("#saveTripButton");
+const openSavedButton = document.querySelector("#openSavedButton");
+const savedDialog = document.querySelector("#savedDialog");
+const savedList = document.querySelector("#savedList");
+const closeSavedButton = document.querySelector("#closeSavedButton");
 const resetButton = document.querySelector("#resetButton");
 const pdfButton = document.querySelector("#pdfButton");
 
@@ -438,7 +461,7 @@ function renderTimeline() {
     card.dataset.kind = "golf";
     card.innerHTML = `
       <div class="event-main">
-        <div class="golf-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(round.day)}</small></div>
+        <div class="golf-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(round.day)}${round.time ? ` · ${html(round.time)}` : ""}</small></div>
         <div class="meta">골프 · 1인 ${krwText(breakdown.total)} · ${usdText(breakdown.total)} · <button class="link-button" type="button" data-goto="golf">골프 탭에서 편집</button></div>
       </div>
       <div class="money-field golf-event__cost">${phpText(breakdown.total)}</div>
@@ -485,7 +508,7 @@ function spendItems() {
   const fromGolf = golf.rounds.map((round) => {
     const breakdown = golfRoundBreakdown(round, golf.people);
     return {
-      name: `⛳ ${breakdown.course.name} (${round.day})`,
+      name: `⛳ ${breakdown.course.name} (${round.day}${round.time ? ` ${round.time}` : ""})`,
       day: Number(round.tripDay) || 0,
       category: "골프",
       amount: breakdown.total,
@@ -683,6 +706,10 @@ function renderGolfRounds() {
             <span>일정 일차</span>
             <input class="budget-edit" data-golf-field="tripDay" inputmode="numeric" aria-label="일정 일차" value="${html(round.tripDay)}" />
           </label>
+          <label class="inline-field">
+            <span>시간</span>
+            <input data-golf-field="time" aria-label="라운드 시간" placeholder="06:30" value="${html(round.time || "")}" />
+          </label>
         </div>
         <div class="golf-breakdown">
           <span>그린피 <b>${phpText(greenFee)}</b></span>
@@ -831,49 +858,225 @@ function renderAll() {
   renderView();
 }
 
-// === 백업 / 가져오기 / 초기화 ===
-function exportData() {
-  const data = { version: 2, exportedAt: new Date().toISOString() };
+// === 저장된 일정(클라우드 DB / 로컬 폴백) / 초기화 ===
+// 일정이 매번 비슷하므로, 현재 상태를 통째로 이름 붙여 저장해 두고 다시 불러온다.
+// 화면에 표시 중인 목록 캐시 (id로 빠르게 조회하기 위함)
+let savedCache = [];
+
+// 현재 localStorage의 모든 데이터를 하나의 스냅샷으로 묶는다.
+function currentSnapshotData() {
+  const data = {};
   backupKeys.forEach((key) => {
     const value = localStorage.getItem(key);
     if (value != null) data[key] = value;
   });
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  const stamp = new Date().toISOString().slice(0, 10);
-  link.href = url;
-  link.download = `clark-planner-backup-${stamp}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  return data;
 }
 
-function importData(file) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    let data;
-    try {
-      data = JSON.parse(reader.result);
-    } catch {
-      alert("백업 파일을 읽을 수 없습니다. JSON 형식이 맞는지 확인해 주세요.");
-      return;
-    }
-    if (!data || typeof data !== "object") {
-      alert("백업 파일 형식이 올바르지 않습니다.");
-      return;
-    }
-    const hasAny = backupKeys.some((key) => typeof data[key] === "string");
-    if (!hasAny) {
-      alert("이 앱의 백업 파일이 아닌 것 같습니다.");
-      return;
-    }
-    if (!confirm("현재 편집 내용을 백업 파일 내용으로 덮어쓸까요?")) return;
-    backupKeys.forEach((key) => {
-      if (typeof data[key] === "string") localStorage.setItem(key, data[key]);
+// --- 로컬 폴백 저장소 ---
+function loadLocalSaved() {
+  try {
+    const list = JSON.parse(localStorage.getItem(savedTripsKey));
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+function persistLocalSaved(list) {
+  localStorage.setItem(savedTripsKey, JSON.stringify(list));
+}
+
+// --- Firestore REST 호출 헬퍼 ---
+async function firestore(path, options = {}) {
+  const sep = path.includes("?") ? "&" : "?";
+  const res = await fetch(`${firestoreBase()}${path}${sep}key=${firebaseConfig.apiKey}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+  });
+  if (!res.ok) throw new Error(`Firestore ${res.status}: ${await res.text()}`);
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+// data(문자열 맵)를 Firestore 타입 형식으로 인코딩/디코딩
+const encodeStringMap = (map) => ({
+  mapValue: { fields: Object.fromEntries(Object.entries(map).map(([k, v]) => [k, { stringValue: String(v) }])) },
+});
+const decodeStringMap = (field) => {
+  const fields = field?.mapValue?.fields || {};
+  return Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.stringValue ?? ""]));
+};
+const encodeDoc = ({ name, savedAt, data }) => ({
+  fields: { name: { stringValue: name }, saved_at: { stringValue: savedAt }, data: encodeStringMap(data) },
+});
+// Firestore 문서를 화면용 형태로 정규화 (문서 id는 경로 마지막 조각)
+const decodeDoc = (doc) => ({
+  id: doc.name.split("/").pop(),
+  name: doc.fields?.name?.stringValue ?? "",
+  savedAt: doc.fields?.saved_at?.stringValue ?? "",
+  data: decodeStringMap(doc.fields?.data),
+});
+
+// --- 데이터 레이어 (클라우드 ↔ 로컬 자동 선택) ---
+async function dbList() {
+  if (cloudOn()) {
+    const res = await firestore(`/${FIRESTORE_COLLECTION}?pageSize=300`);
+    const docs = (res?.documents || []).map(decodeDoc);
+    // 최신 저장본이 위로 오도록 저장시각 내림차순 정렬 (ISO 문자열은 사전식 정렬과 일치)
+    return docs.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+  }
+  return loadLocalSaved();
+}
+async function dbFindByName(name) {
+  return (await dbList()).find((item) => item.name === name) || null;
+}
+async function dbInsert(name, data, stamp) {
+  if (cloudOn()) {
+    const doc = await firestore(`/${FIRESTORE_COLLECTION}`, {
+      method: "POST",
+      body: JSON.stringify(encodeDoc({ name, savedAt: stamp, data })),
     });
-    location.reload();
-  };
-  reader.readAsText(file);
+    return decodeDoc(doc);
+  }
+  const list = loadLocalSaved();
+  const entry = { id: `trip-${Date.now()}`, name, savedAt: stamp, data };
+  list.unshift(entry);
+  persistLocalSaved(list);
+  return entry;
+}
+async function dbUpdate(id, fields) {
+  if (cloudOn()) {
+    // 변경할 필드만 updateMask로 지정해 나머지 필드는 보존한다.
+    const masks = [];
+    const docFields = {};
+    if ("name" in fields) { masks.push("name"); docFields.name = { stringValue: fields.name }; }
+    if ("savedAt" in fields) { masks.push("saved_at"); docFields.saved_at = { stringValue: fields.savedAt }; }
+    if ("data" in fields) { masks.push("data"); docFields.data = encodeStringMap(fields.data); }
+    const mask = masks.map((m) => `updateMask.fieldPaths=${m}`).join("&");
+    await firestore(`/${FIRESTORE_COLLECTION}/${encodeURIComponent(id)}?${mask}`, {
+      method: "PATCH",
+      body: JSON.stringify({ fields: docFields }),
+    });
+    return;
+  }
+  const list = loadLocalSaved();
+  const item = list.find((entry) => entry.id === id);
+  if (item) Object.assign(item, fields);
+  persistLocalSaved(list);
+}
+async function dbDelete(id) {
+  if (cloudOn()) {
+    await firestore(`/${FIRESTORE_COLLECTION}/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return;
+  }
+  persistLocalSaved(loadLocalSaved().filter((entry) => entry.id !== id));
+}
+
+async function saveCurrentTrip() {
+  const suggested = (trip.startDate ? `${trip.startDate} ` : "") + `${trip.days}일 일정`;
+  const name = (prompt("저장할 이름을 입력하세요.", suggested) || "").trim();
+  if (!name) return;
+  const stamp = new Date().toISOString();
+  const data = currentSnapshotData();
+  try {
+    const existing = await dbFindByName(name);
+    if (existing) {
+      if (!confirm(`"${name}" 저장본이 이미 있습니다. 덮어쓸까요?`)) return;
+      await dbUpdate(existing.id, { data, savedAt: stamp });
+    } else {
+      await dbInsert(name, data, stamp);
+    }
+    await renderSavedList();
+    alert(`"${name}"(으)로 저장했습니다.${cloudOn() ? " (클라우드)" : ""}`);
+  } catch (error) {
+    console.error(error);
+    alert("저장에 실패했습니다. 인터넷 연결과 클라우드 설정을 확인해 주세요.");
+  }
+}
+
+function loadTripSnapshot(id) {
+  const item = savedCache.find((entry) => entry.id === id);
+  if (!item) return;
+  if (!confirm(`현재 편집 내용을 "${item.name}" 저장본으로 덮어쓸까요?`)) return;
+  // 저장본에 없는 키는 비워 두어, 불러온 상태와 정확히 일치하도록 한다.
+  backupKeys.forEach((key) => {
+    if (typeof item.data?.[key] === "string") localStorage.setItem(key, item.data[key]);
+    else localStorage.removeItem(key);
+  });
+  localStorage.setItem(seededKey, "done");
+  localStorage.setItem(purgeKey, "done");
+  location.reload();
+}
+
+async function deleteTripSnapshot(id) {
+  const item = savedCache.find((entry) => entry.id === id);
+  if (!item) return;
+  if (!confirm(`저장본 "${item.name}"을(를) 삭제할까요?`)) return;
+  try {
+    await dbDelete(id);
+    await renderSavedList();
+  } catch (error) {
+    console.error(error);
+    alert("삭제에 실패했습니다.");
+  }
+}
+
+async function renameTripSnapshot(id) {
+  const item = savedCache.find((entry) => entry.id === id);
+  if (!item) return;
+  const name = (prompt("새 이름을 입력하세요.", item.name) || "").trim();
+  if (!name || name === item.name) return;
+  try {
+    if (savedCache.some((entry) => entry.id !== id && entry.name === name)) {
+      alert("같은 이름의 저장본이 이미 있습니다.");
+      return;
+    }
+    await dbUpdate(id, { name });
+    await renderSavedList();
+  } catch (error) {
+    console.error(error);
+    alert("이름 변경에 실패했습니다.");
+  }
+}
+
+async function renderSavedList() {
+  savedList.innerHTML = `<p class="meta saved-empty">불러오는 중…</p>`;
+  let list;
+  try {
+    list = await dbList();
+  } catch (error) {
+    console.error(error);
+    savedCache = [];
+    savedList.innerHTML = `<p class="meta saved-empty">목록을 불러오지 못했습니다. 인터넷 연결과 클라우드 설정을 확인해 주세요.</p>`;
+    return;
+  }
+  savedCache = list;
+  const where = cloudOn() ? "클라우드" : "이 브라우저";
+  if (!list.length) {
+    savedList.innerHTML = `<p class="meta saved-empty">저장된 일정이 없습니다. "현재 일정 저장"으로 지금 화면을 저장해 보세요. (저장 위치: ${where})</p>`;
+    return;
+  }
+  savedList.innerHTML = list.map((item) => {
+    const when = item.savedAt ? String(item.savedAt).slice(0, 10) : "";
+    return `
+      <article class="saved-item" data-id="${html(item.id)}">
+        <div class="saved-item__info">
+          <strong class="saved-item__name">${html(item.name)}</strong>
+          <span class="meta">${html(when)} · ${where}</span>
+        </div>
+        <div class="saved-item__actions">
+          <button class="small-action" type="button" data-saved-action="load">불러오기</button>
+          <button class="small-action" type="button" data-saved-action="rename">이름변경</button>
+          <button class="small-action is-danger" type="button" data-saved-action="delete">삭제</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function openSavedDialog() {
+  renderSavedList();
+  if (typeof savedDialog.showModal === "function") savedDialog.showModal();
+  else savedDialog.setAttribute("open", "");
 }
 
 // 완전 초기화: 일정·지출·골프·메모·여행기간·환율을 모두 삭제하고 빈 상태로 시작한다.
@@ -1268,7 +1471,7 @@ golfPeople.addEventListener("change", () => {
 
 addRoundButton.addEventListener("click", () => {
   const id = nextId("round", golf.rounds);
-  golf.rounds.push({ id, course: golfCourses[0].id, day: "주말", tripDay: 1 });
+  golf.rounds.push({ id, course: golfCourses[0].id, day: "주말", tripDay: 1, time: "" });
   saveGolf();
   renderGolfLinked();
   requestAnimationFrame(() => {
@@ -1293,8 +1496,8 @@ golfRounds.addEventListener("change", (event) => {
 });
 
 golfRounds.addEventListener("input", (event) => {
-  // 일정 일차는 숫자 입력이라 입력 즉시 반영 (재렌더로 라운드 카드 자체는 건드리지 않음)
-  if (event.target.dataset.golfField === "tripDay") applyGolfRoundField(event.target);
+  // 일정 일차·시간은 텍스트 입력이라 입력 즉시 반영 (재렌더로 라운드 카드 자체는 건드리지 않음)
+  if (["tripDay", "time"].includes(event.target.dataset.golfField)) applyGolfRoundField(event.target);
 });
 
 golfRounds.addEventListener("click", (event) => {
@@ -1339,12 +1542,22 @@ golfRefTable.addEventListener("click", (event) => {
   renderGolfLinked();
 });
 
-exportButton.addEventListener("click", exportData);
-importButton.addEventListener("click", () => importInput.click());
-importInput.addEventListener("change", (event) => {
-  const file = event.target.files?.[0];
-  if (file) importData(file);
-  importInput.value = "";
+saveTripButton.addEventListener("click", saveCurrentTrip);
+openSavedButton.addEventListener("click", openSavedDialog);
+closeSavedButton.addEventListener("click", () => savedDialog.close());
+// 백드롭(다이얼로그 바깥) 클릭 시 닫기
+savedDialog.addEventListener("click", (event) => {
+  if (event.target === savedDialog) savedDialog.close();
+});
+savedList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-saved-action]");
+  if (!button) return;
+  const id = button.closest(".saved-item")?.dataset.id;
+  if (!id) return;
+  const action = button.dataset.savedAction;
+  if (action === "load") loadTripSnapshot(id);
+  else if (action === "rename") renameTripSnapshot(id);
+  else if (action === "delete") deleteTripSnapshot(id);
 });
 resetButton.addEventListener("click", resetData);
 pdfButton.addEventListener("click", () => window.print());

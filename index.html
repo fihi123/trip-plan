@@ -123,11 +123,19 @@
 
       <section class="data-tools" aria-label="데이터 관리">
         <button class="data-button is-primary" id="pdfButton" type="button">PDF로 저장 / 공유</button>
-        <button class="data-button" id="exportButton" type="button">백업 내보내기</button>
-        <button class="data-button" id="importButton" type="button">백업 가져오기</button>
+        <button class="data-button" id="saveTripButton" type="button">현재 일정 저장</button>
+        <button class="data-button" id="openSavedButton" type="button">저장된 일정 불러오기</button>
         <button class="data-button is-danger" id="resetButton" type="button">완전 초기화 (전체 삭제)</button>
-        <input id="importInput" type="file" accept="application/json,.json" hidden />
       </section>
+
+      <dialog class="saved-dialog" id="savedDialog" aria-label="저장된 일정">
+        <div class="saved-dialog__head">
+          <h2>저장된 일정</h2>
+          <button class="delete-inline" id="closeSavedButton" type="button" aria-label="닫기">×</button>
+        </div>
+        <p class="memo-hint">현재 화면의 일정·지출·골프·메모·여행기간·환율을 통째로 저장하고, 언제든 다시 불러올 수 있습니다.</p>
+        <div class="saved-list" id="savedList"></div>
+      </dialog>
     </main>
 
     <script src="app.js"></script>
