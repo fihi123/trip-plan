@@ -533,6 +533,7 @@ function spendItems() {
     day: 0,
     category: eventCategories.includes(item.category) ? item.category : "기타",
     amount: toPhp(item.amount, spendCurrencyOf(item)),
+    prepaid: true, // 선결제 — 현지 환전 금액에서 제외
   }));
   return [...fromEvents, ...fromGolf, ...fromExtra];
 }
@@ -544,10 +545,18 @@ function spendRows(map) {
 function renderSpend() {
   const items = spendItems();
   const total = items.reduce((sum, item) => sum + item.amount, 0);
+  // 환전해야 할 금액 = 총액 − 선결제(현지에서 쓸 일정+골프 비용)
+  const exchange = items.filter((item) => !item.prepaid).reduce((sum, item) => sum + item.amount, 0);
 
   spendSummary.innerHTML = `
-    <span class="spend-total-bar__label">전체 예상 지출 (일정 + 골프)</span>
-    <span class="spend-total-bar__amounts"><strong>${phpText(total)}</strong> · ${krwText(total)} · ${usdText(total)}</span>
+    <div class="spend-total-bar__row">
+      <span class="spend-total-bar__label">전체 예상 지출 (선결제 포함)</span>
+      <span class="spend-total-bar__amounts"><strong>${phpText(total)}</strong> · ${krwText(total)} · ${usdText(total)}</span>
+    </div>
+    <div class="spend-total-bar__row">
+      <span class="spend-total-bar__label">현지에서 환전할 금액 (선결제 제외)</span>
+      <span class="spend-total-bar__amounts"><strong>${phpText(exchange)}</strong> · ${krwText(exchange)} · ${usdText(exchange)}</span>
+    </div>
   `;
 
   const byCategory = new Map();

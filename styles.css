@@ -1049,15 +1049,26 @@ body.saved-mode .segments {
 /* 지출 전체 합계 — 한 줄 바 */
 .spend-total-bar {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 6px 14px;
+  flex-direction: column;
+  gap: 8px;
   margin-bottom: 16px;
   padding: 12px 16px;
   border: 1px solid var(--teal);
   border-radius: 8px;
   background: rgba(15, 118, 110, 0.07);
+}
+
+.spend-total-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px 14px;
+}
+
+.spend-total-bar__row + .spend-total-bar__row {
+  padding-top: 8px;
+  border-top: 1px dashed rgba(15, 118, 110, 0.3);
 }
 
 .spend-total-bar__label {
