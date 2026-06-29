@@ -314,6 +314,11 @@ function spendCurrencyOf(item) {
   return spendCurrencies.includes(item.currency) ? item.currency : "KRW";
 }
 
+// 결제 구분: prepaid(선결제) / onsite(현지결제, 환전 대상). 미지정 항목은 기존 동작대로 선결제.
+function spendPaymentOf(item) {
+  return item.pay === "onsite" ? "onsite" : "prepaid";
+}
+
 function toPhp(amount, currency) {
   const value = Number(amount || 0);
   if (currency === "PHP") return value;
@@ -533,7 +538,7 @@ function spendItems() {
     day: 0,
     category: eventCategories.includes(item.category) ? item.category : "기타",
     amount: toPhp(item.amount, spendCurrencyOf(item)),
-    prepaid: true, // 선결제 — 현지 환전 금액에서 제외
+    prepaid: spendPaymentOf(item) === "prepaid", // 선결제만 환전 금액에서 제외
   }));
   return [...fromEvents, ...fromGolf, ...fromExtra];
 }
@@ -549,12 +554,12 @@ function renderSpend() {
   const exchange = items.filter((item) => !item.prepaid).reduce((sum, item) => sum + item.amount, 0);
 
   spendSummary.innerHTML = `
-    <div class="spend-total-bar__row">
+    <div class="spend-total-bar__item">
       <span class="spend-total-bar__label">전체 예상 지출 (선결제 포함)</span>
       <span class="spend-total-bar__amounts"><strong>${phpText(total)}</strong> · ${krwText(total)} · ${usdText(total)}</span>
     </div>
-    <div class="spend-total-bar__row">
-      <span class="spend-total-bar__label">현지에서 환전할 금액 (선결제 제외)</span>
+    <div class="spend-total-bar__item">
+      <span class="spend-total-bar__label">환전할 금액 (선결제 제외)</span>
       <span class="spend-total-bar__amounts"><strong>${phpText(exchange)}</strong> · ${krwText(exchange)} · ${usdText(exchange)}</span>
     </div>
   `;
@@ -615,14 +620,20 @@ function renderExtraSpends() {
   const currencyOptions = (selected) => spendCurrencies.map((code) =>
     `<option value="${code}" ${code === selected ? "selected" : ""}>${currencyLabels[code]}</option>`
   ).join("");
+  const payLabels = { prepaid: "선결제", onsite: "현지결제(환전)" };
+  const payOptions = (selected) => Object.entries(payLabels).map(([code, label]) =>
+    `<option value="${code}" ${code === selected ? "selected" : ""}>${label}</option>`
+  ).join("");
 
   extraSpendList.innerHTML = extraSpends.map((item) => {
     const currency = spendCurrencyOf(item);
     const php = toPhp(item.amount, currency);
     const category = eventCategories.includes(item.category) ? item.category : "기타";
+    const pay = spendPaymentOf(item);
     return `
-      <div class="spend-item" data-spend-id="${html(item.id)}">
-        <input class="spend-item__name" data-spend-field="name" aria-label="항목" placeholder="예: 항공료, 숙소 선결제" value="${html(item.name || "")}" />
+      <div class="spend-item${pay === "onsite" ? " spend-item--onsite" : ""}" data-spend-id="${html(item.id)}">
+        <input class="spend-item__name" data-spend-field="name" aria-label="항목" placeholder="예: 항공료, 숙박비, 차량렌트비" value="${html(item.name || "")}" />
+        <select data-spend-field="pay" aria-label="결제 구분">${payOptions(pay)}</select>
         <select data-spend-field="category" aria-label="분류">${categoryOptions(category)}</select>
         <select data-spend-field="currency" aria-label="통화">${currencyOptions(currency)}</select>
         <input class="spend-item__amount" data-spend-field="amount" inputmode="numeric" aria-label="금액" value="${html(item.amount || "")}" />
@@ -633,7 +644,7 @@ function renderExtraSpends() {
   }).join("");
 
   if (!extraSpends.length) {
-    extraSpendList.innerHTML = `<p class="meta">미리 결제한 항공료·숙소·골프 등을 "추가"로 넣으면 지출 합계에 반영됩니다.</p>`;
+    extraSpendList.innerHTML = `<p class="meta">"추가"로 항목을 넣고 결제 구분을 고르세요. 선결제(항공료 등)는 총액에만, 현지결제(숙박비·차량렌트비 등)는 환전 금액에도 더해집니다.</p>`;
   }
 }
 
@@ -1481,7 +1492,7 @@ function findExtraSpend(target) {
 
 addSpendButton.addEventListener("click", () => {
   const id = `spend-${Date.now()}-${extraSpends.length + 1}`;
-  extraSpends.push({ id, name: "", category: "기타", currency: "KRW", amount: 0 });
+  extraSpends.push({ id, name: "", category: "기타", currency: "KRW", amount: 0, pay: "onsite" });
   saveExtraSpends();
   renderExtraSpends();
   renderSpend();
@@ -1507,7 +1518,7 @@ extraSpendList.addEventListener("input", (event) => {
 
 extraSpendList.addEventListener("change", (event) => {
   const field = event.target.dataset.spendField;
-  if (field !== "category" && field !== "currency") return;
+  if (field !== "category" && field !== "currency" && field !== "pay") return;
   const item = findExtraSpend(event.target);
   if (!item) return;
   item[field] = event.target.value;

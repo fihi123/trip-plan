@@ -1049,8 +1049,8 @@ body.saved-mode .segments {
 /* 지출 전체 합계 — 한 줄 바 */
 .spend-total-bar {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 10px 28px;
   margin-bottom: 16px;
   padding: 12px 16px;
   border: 1px solid var(--teal);
@@ -1058,17 +1058,25 @@ body.saved-mode .segments {
   background: rgba(15, 118, 110, 0.07);
 }
 
-.spend-total-bar__row {
+.spend-total-bar__item {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 6px 14px;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 240px;
 }
 
-.spend-total-bar__row + .spend-total-bar__row {
-  padding-top: 8px;
-  border-top: 1px dashed rgba(15, 118, 110, 0.3);
+.spend-total-bar__item + .spend-total-bar__item {
+  border-left: 1px dashed rgba(15, 118, 110, 0.3);
+  padding-left: 28px;
+}
+
+@media (max-width: 560px) {
+  .spend-total-bar__item + .spend-total-bar__item {
+    border-left: none;
+    padding-left: 0;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(15, 118, 110, 0.3);
+  }
 }
 
 .spend-total-bar__label {
@@ -1119,7 +1127,7 @@ body.saved-mode .segments {
 
 .spend-item {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) 110px 110px 110px minmax(0, 1.2fr) 34px;
+  grid-template-columns: minmax(0, 1.3fr) 120px 100px 100px 95px minmax(0, 1fr) 34px;
   gap: 8px;
   align-items: center;
   padding: 8px;
@@ -1127,6 +1135,11 @@ body.saved-mode .segments {
   border-left: 4px solid var(--blue);
   border-radius: 8px;
   background: #fff;
+}
+
+/* 현지결제(환전 대상) 항목은 환전 금액과 같은 색으로 구분 */
+.spend-item--onsite {
+  border-left-color: var(--teal);
 }
 
 .spend-item input,
