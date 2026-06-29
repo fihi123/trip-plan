@@ -11,6 +11,17 @@
   --blue: #315f8f;
   --field: #f8faf9;
   --shadow: 0 10px 28px rgba(22, 32, 38, 0.09);
+
+  /* 글씨 크기 스케일 — 모든 font-size는 이 토큰만 사용 */
+  --fs-caption: 12px;                 /* 라벨·힌트·표 헤더·칩·캡션 */
+  --fs-sm: 13px;                      /* 보조 텍스트·메타·개수 */
+  --fs-base: 14px;                    /* 본문·입력값(기본) */
+  --fs-md: 15px;                      /* 소제목·브랜드·강조 */
+  --fs-lg: 17px;                      /* 카드 제목·장소명 */
+  --fs-xl: 20px;                      /* 인라인 합계 금액 */
+  --fs-2xl: 24px;                     /* h2 섹션 제목 */
+  --fs-h1: clamp(24px, 4vw, 32px);    /* 히어로 제목 */
+  --fs-display: clamp(22px, 3vw, 30px); /* 큰 숫자(지표·골프 통계) */
 }
 
 * {
@@ -57,13 +68,13 @@ input {
 }
 
 .topbar strong {
-  font-size: 15px;
+  font-size: var(--fs-md);
   letter-spacing: 0;
   white-space: nowrap;
 }
 
 .topbar__title {
-  font-size: 18px;
+  font-size: var(--fs-lg);
   line-height: 1.2;
   max-width: none;
   font-weight: 800;
@@ -93,17 +104,17 @@ input {
 
 .topbar .spend-amounts span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 700;
 }
 
 .topbar .spend-amounts strong {
-  font-size: 18px;
+  font-size: var(--fs-lg);
 }
 
 .topbar .spend-amounts #metricSpendKrw {
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--fs-base);
 }
 
 .topbar__actions {
@@ -145,7 +156,7 @@ input {
 
 .eyebrow {
   margin: 0 0 6px;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -160,13 +171,13 @@ h2 {
 
 h1 {
   max-width: 720px;
-  font-size: clamp(24px, 4vw, 32px);
+  font-size: var(--fs-h1);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
 h2 {
-  font-size: 24px;
+  font-size: var(--fs-2xl);
 }
 
 .hero__stats {
@@ -181,7 +192,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 main {
@@ -206,7 +217,7 @@ main {
   display: grid;
   gap: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 700;
 }
 
@@ -274,12 +285,12 @@ body.saved-mode .segments {
 }
 
 .metric span {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 800;
 }
 
 .metric strong {
-  font-size: clamp(22px, 3vw, 30px);
+  font-size: var(--fs-display);
   line-height: 1;
 }
 
@@ -339,7 +350,7 @@ body.saved-mode .segments {
 .memo-hint {
   margin: 0 0 10px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
 }
 
@@ -446,7 +457,7 @@ body.saved-mode .segments {
   align-items: center;
   gap: 4px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 800;
 }
 
@@ -470,7 +481,7 @@ body.saved-mode .segments {
 
 .trip-dates {
   color: var(--teal);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 800;
 }
 
@@ -517,7 +528,7 @@ body.saved-mode .segments {
 .rates__updated,
 .rates__hint {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 700;
 }
 
@@ -619,7 +630,7 @@ body.saved-mode .segments {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -637,12 +648,12 @@ body.saved-mode .segments {
 
 .golf-round__total span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 900;
 }
 
 .golf-round__total strong {
-  font-size: 20px;
+  font-size: var(--fs-xl);
   color: var(--teal);
 }
 
@@ -668,12 +679,12 @@ body.saved-mode .segments {
 
 .golf-stat span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 900;
 }
 
 .golf-stat strong {
-  font-size: clamp(20px, 3vw, 26px);
+  font-size: var(--fs-display);
   line-height: 1;
 }
 
@@ -710,7 +721,7 @@ body.saved-mode .segments {
 .golf-ref-table table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .golf-ref-table th,
@@ -723,7 +734,7 @@ body.saved-mode .segments {
 
 .golf-ref-table th {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-caption);
   font-weight: 900;
 }
 
@@ -736,7 +747,7 @@ body.saved-mode .segments {
   display: block;
   color: var(--muted);
   font-weight: 700;
-  font-size: 11px;
+  font-size: var(--fs-caption);
 }
 
 /* 요금표 수정용 입력칸 */
@@ -807,7 +818,7 @@ body.saved-mode .segments {
 
 #visibleCount {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
@@ -875,7 +886,7 @@ body.saved-mode .segments {
   display: grid;
   gap: 5px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-caption);
   font-weight: 900;
 }
 
@@ -920,7 +931,7 @@ body.saved-mode .segments {
 }
 
 .golf-event__title {
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-weight: 850;
   overflow-wrap: anywhere;
 }
@@ -962,7 +973,7 @@ body.saved-mode .segments {
 
 .spend-total-bar__label {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 900;
 }
 
@@ -973,13 +984,13 @@ body.saved-mode .segments {
 
 .spend-total-bar__amounts strong {
   color: var(--teal);
-  font-size: 22px;
+  font-size: var(--fs-xl);
 }
 
 /* 지출 페이지 소제목 */
 .spend-heading {
   margin: 18px 0 8px;
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-weight: 900;
   color: var(--blue);
 }
@@ -1044,7 +1055,7 @@ body.saved-mode .segments {
 
 .spend-item__conv {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -1091,14 +1102,14 @@ body.saved-mode .segments {
 
 .place-name {
   min-width: 0;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   font-weight: 850;
   overflow-wrap: anywhere;
 }
 
 .meta {
   margin-top: 8px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .matched-place {
@@ -1111,7 +1122,7 @@ body.saved-mode .segments {
   padding: 5px 9px;
   color: var(--teal);
   background: rgba(15, 118, 110, 0.06);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 900;
   text-align: left;
   overflow-wrap: anywhere;
@@ -1187,7 +1198,7 @@ body.saved-mode .segments {
   border-radius: 999px;
   color: #fff;
   background: var(--blue);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1249,7 +1260,7 @@ body.saved-mode .segments {
   padding: 0 0 5px;
   color: var(--ink);
   background: transparent;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 900;
   line-height: 1.32;
   outline: none;
@@ -1261,7 +1272,7 @@ body.saved-mode .segments {
 
 .saved-card h3 {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   line-height: 1.32;
   overflow-wrap: anywhere;
 }
@@ -1285,7 +1296,7 @@ body.saved-mode .segments {
   padding: 4px 8px;
   color: var(--blue);
   background: rgba(49, 95, 143, 0.09);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 900;
 }
 
@@ -1345,7 +1356,7 @@ body.compact .panel {
 }
 
 body.compact .place-name {
-  font-size: 15px;
+  font-size: var(--fs-md);
 }
 
 @media (max-width: 900px) {
@@ -1450,12 +1461,18 @@ body.compact .place-name {
 
 @media print {
   @page {
+    size: A4;
     margin: 14mm;
   }
 
   body {
     background: #fff;
     color: #000;
+    width: 182mm;        /* A4(210mm) − 좌우 여백 14mm */
+    margin: 0 auto;
+    font-size: 10.5pt;   /* A4 기준 본문 크기 */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* 모든 탭 내용을 한 문서에 펼쳐 보인다 */
@@ -1602,7 +1619,7 @@ body.compact .place-name {
   }
 
   .event-editor .event-name-input input {
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 800;
   }
 
@@ -1638,7 +1655,7 @@ body.compact .place-name {
 
   .event-main .meta {
     margin-top: 3px;
-    font-size: 11.5px;
+    font-size: 12px;
     color: #555;
   }
 
@@ -1646,7 +1663,7 @@ body.compact .place-name {
     margin-top: 3px;
     padding: 2px 0;
     border: 0 !important;
-    font-size: 11.5px;
+    font-size: 12px;
   }
 
   .saved-grid {
