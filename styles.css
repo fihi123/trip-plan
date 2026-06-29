@@ -468,6 +468,21 @@ body.saved-mode .segments {
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
 }
 
+.trip-dates {
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.day-date {
+  margin-bottom: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(49, 95, 143, 0.08);
+  color: var(--blue);
+  font-weight: 900;
+}
+
 /* 환율 입력 */
 .rates {
   display: flex;
@@ -580,8 +595,24 @@ body.saved-mode .segments {
 
 .golf-round__controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px;
+  grid-template-columns: minmax(0, 1fr) 110px 90px;
   gap: 10px;
+}
+
+.golf-round__controls input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--field);
+  outline: none;
+}
+
+.golf-round__controls input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
 }
 
 .golf-breakdown {
@@ -826,9 +857,17 @@ body.saved-mode .segments {
 }
 
 .event-editor {
-  display: grid;
-  grid-template-columns: 1fr 96px 96px;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.event-editor .inline-field {
+  flex: 1 1 90px;
+}
+
+.event-editor .event-name-input {
+  flex: 1 1 100%;
 }
 
 .inline-field,
@@ -854,6 +893,7 @@ body.saved-mode .segments {
 }
 
 .event-editor input,
+.event-editor select,
 .budget-edit {
   width: 100%;
   min-height: 38px;
@@ -866,9 +906,56 @@ body.saved-mode .segments {
 }
 
 .event-editor input:focus,
+.event-editor select:focus,
 .budget-edit:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+}
+
+/* 일정에 자동 표시되는 골프 카드 */
+.event-card.golf-event {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-left-color: var(--gold);
+  align-items: center;
+}
+
+.golf-event__title {
+  font-size: 15px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.golf-event__title small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.golf-event__cost {
+  font-weight: 900;
+  text-align: right;
+}
+
+.link-button {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--teal);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* 지출 페이지 소제목 */
+.spend-heading {
+  margin: 18px 0 8px;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--blue);
+}
+
+.spend-heading:first-child {
+  margin-top: 0;
 }
 
 .event-editor .event-name-input {

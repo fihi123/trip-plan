@@ -66,10 +66,11 @@ const golfNumberFields = ["weekday", "weekend", "caddy", "cart2", "cart3", "cart
 
 const defaultGolf = {
   people: 4,
+  // day = 주중/주말, tripDay = 며칠차 일정에 넣을지
   rounds: [
-    { id: "round-1", course: "Luisita", day: "주말" },
-    { id: "round-2", course: "Pradera_May", day: "주말" },
-    { id: "round-3", course: "Korea", day: "주중" },
+    { id: "round-1", course: "Luisita", day: "주말", tripDay: 2 },
+    { id: "round-2", course: "Pradera_May", day: "주말", tripDay: 3 },
+    { id: "round-3", course: "Korea", day: "주중", tripDay: 4 },
   ],
 };
 
@@ -113,7 +114,10 @@ function loadTrip() {
   const stored = loadStoredObject(tripStorageKey);
   const days = Number(stored.days) >= 1 ? Math.min(60, Math.round(Number(stored.days))) : defaultTrip.days;
   const nights = Number(stored.nights) >= 0 ? Math.min(60, Math.round(Number(stored.nights))) : defaultTrip.nights;
-  return { nights, days };
+  const isoRe = /^\d{4}-\d{2}-\d{2}$/;
+  const startDate = isoRe.test(stored.startDate) ? stored.startDate : "";
+  const endDate = isoRe.test(stored.endDate) ? stored.endDate : "";
+  return { nights, days, startDate, endDate };
 }
 
 function loadGolf() {
@@ -124,6 +128,7 @@ function loadGolf() {
         id: round.id || `round-${index + 1}`,
         course: golfCourses.some((course) => course.id === round.course) ? round.course : golfCourses[0].id,
         day: round.day === "주중" ? "주중" : "주말",
+        tripDay: Number(round.tripDay) >= 1 ? Math.round(Number(round.tripDay)) : 1,
       }))
     : defaultGolf.rounds.map((round) => ({ ...round }));
   // 요금표 수정값: { 골프장id: { name?, weekday?, ... } } 형태만 받아들인다.
@@ -151,6 +156,29 @@ function loadRates() {
   };
 }
 
+// === 날짜 유틸 ===
+const DOW_KR = ["일", "월", "화", "수", "목", "금", "토"];
+
+function isoAddDays(iso, n) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + n);
+  const yy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+function isoToMD(iso) {
+  const [, m, d] = iso.split("-");
+  return `${Number(m)}/${Number(d)}`;
+}
+
+function isoDowKr(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return DOW_KR[new Date(y, m - 1, d).getDay()];
+}
+
 // === DOM 참조 ===
 const timeline = document.querySelector("#timeline");
 const daySegments = document.querySelector("#daySegments");
@@ -158,6 +186,9 @@ const visibleCount = document.querySelector("#visibleCount");
 const addEventButton = document.querySelector("#addEventButton");
 const tripNights = document.querySelector("#tripNights");
 const tripDays = document.querySelector("#tripDays");
+const tripDates = document.querySelector("#tripDates");
+const importPdfButton = document.querySelector("#importPdfButton");
+const pdfInput = document.querySelector("#pdfInput");
 const memoField = document.querySelector("#memoNotes");
 const ratePhpKrw = document.querySelector("#ratePhpKrw");
 const ratePhpUsd = document.querySelector("#ratePhpUsd");
@@ -226,6 +257,24 @@ function nextId(prefix, collection) {
   return `${prefix}-${Date.now()}-${collection.length + 1}`;
 }
 
+// === 지출 카테고리 ===
+const eventCategories = ["식비", "숙소", "교통", "마사지", "쇼핑", "밤일정", "골프", "기타"];
+
+function inferCategory(event) {
+  const text = String(event.name || "");
+  if (/마사지/.test(text)) return "마사지";
+  if (eventKind(event) === "night") return "밤일정";
+  if (eventKind(event) === "food") return "식비";
+  if (/SM|쇼핑|마트|싱싱|면세/.test(text)) return "쇼핑";
+  if (/호텔|숙소|빌라|체크인/.test(text)) return "숙소";
+  if (/공항|인천|클락|화성|이동|-->|→/.test(text)) return "교통";
+  return "기타";
+}
+
+function eventCategory(event) {
+  return eventCategories.includes(event.category) ? event.category : inferCategory(event);
+}
+
 // === 일정(타임라인) ===
 function eventKind(event) {
   const text = event.name.toLowerCase();
@@ -281,11 +330,23 @@ function renderTimeline() {
   const items = sortDayEvents(events.filter((event) => String(event.day) === state.day));
   timeline.innerHTML = "";
 
+  if (trip.startDate) {
+    const iso = isoAddDays(trip.startDate, Number(state.day) - 1);
+    const head = document.createElement("div");
+    head.className = "day-date";
+    head.textContent = `${state.day}일차 · ${isoToMD(iso)} (${isoDowKr(iso)})`;
+    timeline.append(head);
+  }
+
   items.forEach((event) => {
     const card = document.createElement("article");
     card.className = "event-card";
     card.dataset.kind = eventKind(event);
     card.dataset.eventId = event.id;
+    const category = eventCategory(event);
+    const categoryOptions = eventCategories.map((name) =>
+      `<option value="${name}" ${name === category ? "selected" : ""}>${name}</option>`
+    ).join("");
     card.innerHTML = `
       <div class="event-main">
         <div class="event-editor">
@@ -301,8 +362,12 @@ function renderTimeline() {
             <span>종료</span>
             <input data-event-field="end" aria-label="종료 시간" placeholder="11:00" value="${html(event.end || "")}" />
           </label>
+          <label class="inline-field event-cat">
+            <span>분류</span>
+            <select data-event-field="category" aria-label="지출 분류">${categoryOptions}</select>
+          </label>
         </div>
-        <div class="meta">${eventKindLabel(event)} · ${event.budget ? "예산 포함" : "이동/숙소"}</div>
+        <div class="meta">${html(category)} · ${event.budget ? "예산 포함" : "이동/숙소"}</div>
       </div>
       <label class="inline-field money-field">
         <span>예산(₱)</span>
@@ -313,10 +378,30 @@ function renderTimeline() {
     timeline.append(card);
   });
 
-  if (!items.length) {
-    timeline.innerHTML = `<p class="meta">${state.day}일차 일정이 없습니다. "추가"로 일정을 넣어 보세요.</p>`;
+  // 해당 일차에 배정된 골프 라운드를 자동으로 표시 (편집은 골프 탭에서)
+  const golfForDay = golf.rounds.filter((round) => Number(round.tripDay) === Number(state.day));
+  golfForDay.forEach((round) => {
+    const breakdown = golfRoundBreakdown(round, golf.people);
+    const card = document.createElement("article");
+    card.className = "event-card golf-event";
+    card.dataset.kind = "golf";
+    card.innerHTML = `
+      <div class="event-main">
+        <div class="golf-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(round.day)}</small></div>
+        <div class="meta">골프 · 1인 ${krwText(breakdown.total)} · ${usdText(breakdown.total)} · <button class="link-button" type="button" data-goto="golf">골프 탭에서 편집</button></div>
+      </div>
+      <div class="money-field golf-event__cost">${phpText(breakdown.total)}</div>
+    `;
+    timeline.append(card);
+  });
+
+  if (!items.length && !golfForDay.length) {
+    const empty = document.createElement("p");
+    empty.className = "meta";
+    empty.textContent = `${state.day}일차 일정이 없습니다. "추가"로 일정을 넣어 보세요.`;
+    timeline.append(empty);
   }
-  visibleCount.value = `${items.length}개 항목`;
+  visibleCount.value = `${items.length + golfForDay.length}개 항목`;
 }
 
 function renderDaySegments() {
@@ -331,38 +416,89 @@ function renderDaySegments() {
 function renderTrip() {
   if (document.activeElement !== tripNights) tripNights.value = String(trip.nights);
   if (document.activeElement !== tripDays) tripDays.value = String(trip.days);
+  tripDates.textContent = trip.startDate
+    ? `✈️ ${trip.startDate}(${isoDowKr(trip.startDate)}) 출국 ~ ${trip.endDate}(${isoDowKr(trip.endDate)}) 귀국 · ${trip.nights}박 ${trip.days}일`
+    : "";
   renderDaySegments();
 }
 
-// === 지출 내역 (페소·원·달러) ===
-function renderSpend() {
-  const grouped = new Map();
-  events.forEach((event) => {
-    const day = Number(event.day);
-    grouped.set(day, (grouped.get(day) || 0) + Number(event.budget || 0));
+// === 지출 내역 (페소·원·달러) — 일정 항목 + 골프(1인 기준)를 합산 ===
+// 골프 비용은 1인 합계를 해당 라운드의 일정 일차에 배정한다.
+function spendItems() {
+  const fromEvents = events.map((event) => ({
+    name: event.name || "(이름 없음)",
+    day: Number(event.day) || 0,
+    category: eventCategory(event),
+    amount: Number(event.budget || 0),
+  }));
+  const fromGolf = golf.rounds.map((round) => {
+    const breakdown = golfRoundBreakdown(round, golf.people);
+    return {
+      name: `⛳ ${breakdown.course.name} (${round.day})`,
+      day: Number(round.tripDay) || 0,
+      category: "골프",
+      amount: breakdown.total,
+    };
   });
-  const days = [...grouped.keys()].sort((a, b) => a - b);
-  const total = events.reduce((sum, event) => sum + Number(event.budget || 0), 0);
+  return [...fromEvents, ...fromGolf];
+}
+
+function spendRows(map) {
+  return [...map.entries()].map(([key, value]) => ({ key, value }));
+}
+
+function renderSpend() {
+  const items = spendItems();
+  const total = items.reduce((sum, item) => sum + item.amount, 0);
 
   spendSummary.innerHTML = `
     <div class="golf-stat is-grand">
-      <span>전체 예상 지출</span>
+      <span>전체 예상 지출 (일정 + 골프)</span>
       <strong>${phpText(total)}</strong>
       <small>${krwText(total)} · ${usdText(total)}</small>
     </div>
   `;
 
+  const byCategory = new Map();
+  eventCategories.forEach((category) => {
+    const sum = items.filter((item) => item.category === category).reduce((acc, item) => acc + item.amount, 0);
+    if (sum > 0) byCategory.set(category, sum);
+  });
+
+  const byDay = new Map();
+  items.forEach((item) => byDay.set(item.day, (byDay.get(item.day) || 0) + item.amount));
+  const days = [...byDay.keys()].sort((a, b) => a - b);
+
+  const detailRows = items
+    .filter((item) => item.amount > 0)
+    .sort((a, b) => a.day - b.day || b.amount - a.amount);
+
+  const moneyCells = (value) => `<td>${phpText(value)}</td><td>${krwText(value)}</td><td>${usdText(value)}</td>`;
+
   spendBreakdown.innerHTML = `
+    <h3 class="spend-heading">카테고리별</h3>
     <table>
-      <thead>
-        <tr><th>일차</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr>
-      </thead>
+      <thead><tr><th>분류</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
       <tbody>
-        ${days.map((day) => {
-          const value = grouped.get(day);
-          return `<tr><td class="golf-ref__name">${day}일차</td><td>${phpText(value)}</td><td>${krwText(value)}</td><td>${usdText(value)}</td></tr>`;
-        }).join("")}
-        <tr class="spend-total-row"><td class="golf-ref__name">합계</td><td>${phpText(total)}</td><td>${krwText(total)}</td><td>${usdText(total)}</td></tr>
+        ${spendRows(byCategory).map((row) => `<tr><td class="golf-ref__name">${html(row.key)}</td>${moneyCells(row.value)}</tr>`).join("")}
+        <tr class="spend-total-row"><td class="golf-ref__name">합계</td>${moneyCells(total)}</tr>
+      </tbody>
+    </table>
+
+    <h3 class="spend-heading">일차별</h3>
+    <table>
+      <thead><tr><th>일차</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
+      <tbody>
+        ${days.map((day) => `<tr><td class="golf-ref__name">${day ? `${day}일차` : "미지정"}</td>${moneyCells(byDay.get(day))}</tr>`).join("")}
+        <tr class="spend-total-row"><td class="golf-ref__name">합계</td>${moneyCells(total)}</tr>
+      </tbody>
+    </table>
+
+    <h3 class="spend-heading">항목별</h3>
+    <table>
+      <thead><tr><th>일차</th><th>항목</th><th>분류</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
+      <tbody>
+        ${detailRows.map((item) => `<tr><td>${item.day ? `${item.day}일차` : "-"}</td><td class="golf-ref__name">${html(item.name)}</td><td>${html(item.category)}</td>${moneyCells(item.amount)}</tr>`).join("")}
       </tbody>
     </table>
   `;
@@ -456,6 +592,10 @@ function renderGolfRounds() {
               <option value="주중" ${round.day === "주중" ? "selected" : ""}>주중</option>
               <option value="주말" ${round.day === "주말" ? "selected" : ""}>주말</option>
             </select>
+          </label>
+          <label class="inline-field">
+            <span>일정 일차</span>
+            <input class="budget-edit" data-golf-field="tripDay" inputmode="numeric" aria-label="일정 일차" value="${html(round.tripDay)}" />
           </label>
         </div>
         <div class="golf-breakdown">
@@ -667,12 +807,9 @@ daySegments.addEventListener("click", (event) => {
 });
 
 // 여행 기간 입력: 한쪽을 바꾸면 다른 쪽을 자동 맞춤(일수 = 박수 + 1)하고 일차 탭을 다시 만든다.
-function applyTrip() {
-  trip.nights = Math.max(0, Math.min(60, Math.round(Number(tripNights.value) || 0)));
-  trip.days = Math.max(1, Math.min(60, Math.round(Number(tripDays.value) || 1)));
-  saveTrip();
-  renderDaySegments();
-  renderTimeline();
+// 출국일이 설정돼 있으면 귀국일을 일수에 맞춰 다시 계산한다.
+function syncTripDates() {
+  if (trip.startDate) trip.endDate = isoAddDays(trip.startDate, trip.days - 1);
 }
 
 tripNights.addEventListener("input", () => {
@@ -680,8 +817,9 @@ tripNights.addEventListener("input", () => {
   trip.nights = nights;
   trip.days = nights + 1;
   tripDays.value = String(trip.days);
+  syncTripDates();
   saveTrip();
-  renderDaySegments();
+  renderTrip();
   renderTimeline();
 });
 
@@ -690,9 +828,117 @@ tripDays.addEventListener("input", () => {
   trip.days = days;
   trip.nights = Math.max(0, days - 1);
   tripNights.value = String(trip.nights);
+  syncTripDates();
   saveTrip();
-  renderDaySegments();
+  renderTrip();
   renderTimeline();
+});
+
+// === 여정안내서(PDF) 자동 인식 ===
+let pdfjsPromise = null;
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (pdfjsPromise) return pdfjsPromise;
+  pdfjsPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    script.onload = () => {
+      if (!window.pdfjsLib) return reject(new Error("pdfjs"));
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = () => reject(new Error("pdfjs"));
+    document.head.appendChild(script);
+  });
+  return pdfjsPromise;
+}
+
+async function extractPdfText(file) {
+  const pdfjsLib = await loadPdfJs();
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let text = "";
+  for (let page = 1; page <= pdf.numPages; page += 1) {
+    const content = await (await pdf.getPage(page)).getTextContent();
+    text += content.items.map((item) => item.str).join(" ") + "\n";
+  }
+  return text;
+}
+
+const PDF_MONTHS = { JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12 };
+
+// 항공권 텍스트에서 DDMMMYY 날짜를 찾아 출국(가장 이른 날)·귀국(가장 늦은 날)을 추정한다.
+// '25JUL26 (SAT)'처럼 요일이 붙은 출발일을 우선 사용하고, 없으면 모든 날짜의 최소/최대를 쓴다.
+function parseItinerary(text) {
+  const toIso = (dd, mmm, yy) => {
+    const month = PDF_MONTHS[mmm];
+    if (!month) return null;
+    return `20${yy}-${String(month).padStart(2, "0")}-${dd}`;
+  };
+  const dated = [];
+  const anchored = /(\d{2})([A-Z]{3})(\d{2})\s*\((?:MON|TUE|WED|THU|FRI|SAT|SUN)\)/g;
+  let match;
+  while ((match = anchored.exec(text))) {
+    const iso = toIso(match[1], match[2], match[3]);
+    if (iso) dated.push(iso);
+  }
+  if (dated.length < 1) {
+    const loose = /\b(\d{2})([A-Z]{3})(\d{2})\b/g;
+    while ((match = loose.exec(text))) {
+      const iso = toIso(match[1], match[2], match[3]);
+      if (iso) dated.push(iso);
+    }
+  }
+  if (!dated.length) return null;
+  const sorted = [...dated].sort();
+  const startDate = sorted[0];
+  const endDate = sorted[sorted.length - 1];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const days = Math.round((end - start) / 86400000) + 1;
+  const flights = (text.match(/\b[A-Z]{2}\d{3,4}\b/g) || []).filter((value, index, list) => list.indexOf(value) === index);
+  return { startDate, endDate, days: Math.max(1, Math.min(60, days)), nights: Math.max(0, days - 1), flights };
+}
+
+async function importItineraryPdf(file) {
+  importPdfButton.disabled = true;
+  const original = importPdfButton.textContent;
+  importPdfButton.textContent = "인식 중…";
+  try {
+    const text = await extractPdfText(file);
+    const result = parseItinerary(text);
+    if (!result) {
+      alert("여정에서 날짜를 찾지 못했습니다. 텍스트 기반 PDF(전자항공권)인지 확인하거나 기간을 직접 입력해 주세요.");
+      return;
+    }
+    const flightText = result.flights.length ? `\n항공편: ${result.flights.join(", ")}` : "";
+    const ok = confirm(
+      `여정 인식 결과${flightText}\n` +
+      `출국: ${result.startDate} (${isoDowKr(result.startDate)})\n` +
+      `귀국: ${result.endDate} (${isoDowKr(result.endDate)})\n` +
+      `→ ${result.nights}박 ${result.days}일로 설정할까요?`
+    );
+    if (!ok) return;
+    trip.startDate = result.startDate;
+    trip.endDate = result.endDate;
+    trip.days = result.days;
+    trip.nights = result.nights;
+    saveTrip();
+    renderTrip();
+    renderTimeline();
+  } catch (error) {
+    alert("PDF를 읽지 못했습니다. 인터넷 연결(최초 1회 라이브러리 다운로드)을 확인하거나, 스캔본이 아닌 전자항공권 PDF인지 확인해 주세요.");
+  } finally {
+    importPdfButton.disabled = false;
+    importPdfButton.textContent = original;
+  }
+}
+
+importPdfButton.addEventListener("click", () => pdfInput.click());
+pdfInput.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (file) importItineraryPdf(file);
+  pdfInput.value = "";
 });
 
 timeline.addEventListener("input", (event) => {
@@ -705,10 +951,22 @@ timeline.addEventListener("input", (event) => {
   item[field] = field === "day" || field === "budget" ? Number(value || 0) : value;
   if (field === "start" && String(value).trim()) item.isNew = false;
   saveEvents();
-  if (field === "budget") renderSpend();
+  if (field === "category") {
+    renderTimeline();
+    renderSpend();
+  } else if (field === "budget") {
+    renderSpend();
+  }
 });
 
 timeline.addEventListener("click", (event) => {
+  const goto = event.target.closest("[data-goto]");
+  if (goto) {
+    state.view = goto.dataset.goto;
+    history.replaceState(null, "", `#${state.view}`);
+    renderView();
+    return;
+  }
   const deleteButton = event.target.closest(".delete-event");
   if (!deleteButton) return;
   const card = deleteButton.closest(".event-card");
@@ -785,31 +1043,48 @@ ratePhpUsd.addEventListener("input", () => {
 
 fetchRatesButton.addEventListener("click", fetchRates);
 
+// 골프는 일정·지출에도 반영되므로 변경 시 함께 다시 그린다.
+function renderGolfLinked() {
+  renderGolf();
+  renderTimeline();
+  renderSpend();
+}
+
 golfPeople.addEventListener("change", () => {
   golf.people = Number(golfPeople.value) || 4;
   saveGolf();
-  renderGolf();
+  renderGolfLinked();
 });
 
 addRoundButton.addEventListener("click", () => {
   const id = nextId("round", golf.rounds);
-  golf.rounds.push({ id, course: golfCourses[0].id, day: "주말" });
+  golf.rounds.push({ id, course: golfCourses[0].id, day: "주말", tripDay: 1 });
   saveGolf();
-  renderGolf();
+  renderGolfLinked();
   requestAnimationFrame(() => {
     document.querySelector(`[data-round-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
   });
 });
 
-golfRounds.addEventListener("change", (event) => {
-  const field = event.target.dataset.golfField;
-  const card = event.target.closest(".golf-round");
+function applyGolfRoundField(target) {
+  const field = target.dataset.golfField;
+  const card = target.closest(".golf-round");
   if (!field || !card) return;
   const round = golf.rounds.find((item) => item.id === card.dataset.roundId);
   if (!round) return;
-  round[field] = event.target.value;
+  round[field] = field === "tripDay" ? Math.max(1, Math.round(Number(target.value) || 1)) : target.value;
   saveGolf();
-  renderGolf();
+  renderTimeline();
+  renderSpend();
+}
+
+golfRounds.addEventListener("change", (event) => {
+  if (event.target.dataset.golfField) applyGolfRoundField(event.target);
+});
+
+golfRounds.addEventListener("input", (event) => {
+  // 일정 일차는 숫자 입력이라 입력 즉시 반영 (재렌더로 라운드 카드 자체는 건드리지 않음)
+  if (event.target.dataset.golfField === "tripDay") applyGolfRoundField(event.target);
 });
 
 golfRounds.addEventListener("click", (event) => {
@@ -821,10 +1096,10 @@ golfRounds.addEventListener("click", (event) => {
   if (!confirm(`라운드 ${index + 1}을(를) 삭제할까요?`)) return;
   golf.rounds.splice(index, 1);
   saveGolf();
-  renderGolf();
+  renderGolfLinked();
 });
 
-// 요금표 직접 수정 — 입력 즉시 저장하고 라운드/합계에 반영 (표 자체는 다시 그리지 않아 커서 유지)
+// 요금표 직접 수정 — 입력 즉시 저장하고 라운드/합계/일정/지출에 반영 (표 자체는 다시 그리지 않아 커서 유지)
 golfRefTable.addEventListener("input", (event) => {
   const input = event.target.closest("[data-course][data-field]");
   if (!input) return;
@@ -842,6 +1117,8 @@ golfRefTable.addEventListener("input", (event) => {
   saveGolf();
   renderGolfRounds();
   renderGolfSummary();
+  renderTimeline();
+  renderSpend();
 });
 
 golfRefTable.addEventListener("click", (event) => {
@@ -849,7 +1126,7 @@ golfRefTable.addEventListener("click", (event) => {
   if (!confirm("요금표를 기본값으로 되돌릴까요? 수정한 요금이 모두 사라집니다.")) return;
   golf.courseEdits = {};
   saveGolf();
-  renderGolf();
+  renderGolfLinked();
 });
 
 exportButton.addEventListener("click", exportData);

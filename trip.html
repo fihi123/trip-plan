@@ -15,6 +15,9 @@
         <div class="trip-duration guide-view" aria-label="여행 기간">
           <label><input id="tripNights" type="number" min="0" max="60" inputmode="numeric" aria-label="박 수" /> 박</label>
           <label><input id="tripDays" type="number" min="1" max="60" inputmode="numeric" aria-label="일 수" /> 일</label>
+          <button class="small-action" id="importPdfButton" type="button">여정 PDF 불러오기</button>
+          <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden />
+          <span class="trip-dates" id="tripDates"></span>
         </div>
         <div class="segments guide-view" id="daySegments" role="tablist" aria-label="일차 선택"></div>
         <div class="topbar__tabs" role="tablist" aria-label="페이지 선택">
