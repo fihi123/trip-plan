@@ -44,22 +44,25 @@ const baseEvents = [
 const defaultTrip = { nights: 3, days: 4 };
 
 // ⛳ 골프 비용 데이터 (clark_golf_calculator.xlsx DATA 시트에서 이전)
-// cart2/cart3/cart4 = 인원수(2/3/4)에 따른 1인당 카트 비용
+// cart2/cart3/cart4 = 인원수(2/3/4)에 따른 1인당 카트 비용, extra = 보험+컨슈머블
 const golfCourses = [
-  { id: "SunValley_General", name: "썬밸리(일반)", season: "4.1~", weekday: 3000, weekend: 3500, caddy: 700, cart2: 750, cart3: 1000, cart4: 750, insurance: 150, consumable: 0 },
-  { id: "SunValley_Member", name: "썬밸리(멤버)", season: "4.1~", weekday: 3300, weekend: 3800, caddy: 700, cart2: 750, cart3: 1000, cart4: 750, insurance: 150, consumable: 0 },
-  { id: "Korea", name: "코리아", season: "3.9~", weekday: 1800, weekend: 2400, caddy: 600, cart2: 1000, cart3: 1333, cart4: 1000, insurance: 150, consumable: 0 },
-  { id: "Mimosa", name: "미모사", season: "~3.31", weekday: 4500, weekend: 5500, caddy: 600, cart2: 800, cart3: 1067, cart4: 800, insurance: 0, consumable: 400 },
-  { id: "Royal", name: "로얄", season: "3.16~", weekday: 1800, weekend: 2300, caddy: 600, cart2: 800, cart3: 1067, cart4: 800, insurance: 150, consumable: 300 },
-  { id: "HanReserve", name: "한리저브", season: "1.10~4.30", weekday: 12500, weekend: 12500, caddy: 0, cart2: 0, cart3: 0, cart4: 0, insurance: 0, consumable: 0 },
-  { id: "Pradera_May", name: "프라데라", season: "5.1~", weekday: 2700, weekend: 2700, caddy: 600, cart2: 750, cart3: 1000, cart4: 750, insurance: 150, consumable: 300 },
-  { id: "Pradera_Apr", name: "프라데라", season: "4월프로모", weekday: 1500, weekend: 1500, caddy: 600, cart2: 750, cart3: 1000, cart4: 750, insurance: 150, consumable: 300 },
-  { id: "Luisita", name: "루이시타", season: "3.16~", weekday: 2000, weekend: 2000, caddy: 600, cart2: 800, cart3: 1067, cart4: 800, insurance: 100, consumable: 300 },
-  { id: "Beverly", name: "베버리", season: "3.16~", weekday: 1400, weekend: 1700, caddy: 600, cart2: 750, cart3: 1000, cart4: 750, insurance: 200, consumable: 300 },
-  { id: "NewAsia", name: "뉴아시아", season: "3.16~", weekday: 1200, weekend: 1200, caddy: 600, cart2: 750, cart3: 1000, cart4: 750, insurance: 150, consumable: 0 },
-  { id: "Lakewood", name: "레이크우드", season: "3.16~", weekday: 1000, weekend: 1000, caddy: 600, cart2: 800, cart3: 1067, cart4: 800, insurance: 0, consumable: 0 },
-  { id: "Subic", name: "수빅CC", season: "~3.31", weekday: 6800, weekend: 10800, caddy: 0, cart2: 0, cart3: 0, cart4: 0, insurance: 0, consumable: 0 },
+  { id: "SunValley_General", name: "썬밸리(일반)", season: "4.1~", weekday: 3000, weekend: 3500, caddy: 700, cart2: 750, cart3: 1000, cart4: 750, extra: 150 },
+  { id: "SunValley_Member", name: "썬밸리(멤버)", season: "4.1~", weekday: 3300, weekend: 3800, caddy: 700, cart2: 750, cart3: 1000, cart4: 750, extra: 150 },
+  { id: "Korea", name: "코리아", season: "3.9~", weekday: 1800, weekend: 2400, caddy: 600, cart2: 1000, cart3: 1333, cart4: 1000, extra: 150 },
+  { id: "Mimosa", name: "미모사", season: "~3.31", weekday: 4500, weekend: 5500, caddy: 600, cart2: 800, cart3: 1067, cart4: 800, extra: 400 },
+  { id: "Royal", name: "로얄", season: "3.16~", weekday: 1800, weekend: 2300, caddy: 600, cart2: 800, cart3: 1067, cart4: 800, extra: 450 },
+  { id: "HanReserve", name: "한리저브", season: "1.10~4.30", weekday: 12500, weekend: 12500, caddy: 0, cart2: 0, cart3: 0, cart4: 0, extra: 0 },
+  { id: "Pradera_May", name: "프라데라", season: "5.1~", weekday: 2700, weekend: 2700, caddy: 600, cart2: 750, cart3: 1000, cart4: 750, extra: 450 },
+  { id: "Pradera_Apr", name: "프라데라", season: "4월프로모", weekday: 1500, weekend: 1500, caddy: 600, cart2: 750, cart3: 1000, cart4: 750, extra: 450 },
+  { id: "Luisita", name: "루이시타", season: "3.16~", weekday: 2000, weekend: 2000, caddy: 600, cart2: 800, cart3: 1067, cart4: 800, extra: 400 },
+  { id: "Beverly", name: "베버리", season: "3.16~", weekday: 1400, weekend: 1700, caddy: 600, cart2: 750, cart3: 1000, cart4: 750, extra: 500 },
+  { id: "NewAsia", name: "뉴아시아", season: "3.16~", weekday: 1200, weekend: 1200, caddy: 600, cart2: 750, cart3: 1000, cart4: 750, extra: 150 },
+  { id: "Lakewood", name: "레이크우드", season: "3.16~", weekday: 1000, weekend: 1000, caddy: 600, cart2: 800, cart3: 1067, cart4: 800, extra: 0 },
+  { id: "Subic", name: "수빅CC", season: "~3.31", weekday: 6800, weekend: 10800, caddy: 0, cart2: 0, cart3: 0, cart4: 0, extra: 0 },
 ];
+
+// 요금표에서 수정 가능한 숫자 필드 (인원별 카트는 현재 선택 인원에 해당하는 키로 매핑)
+const golfNumberFields = ["weekday", "weekend", "caddy", "cart2", "cart3", "cart4", "extra"];
 
 const defaultGolf = {
   people: 4,
@@ -123,7 +126,20 @@ function loadGolf() {
         day: round.day === "주중" ? "주중" : "주말",
       }))
     : defaultGolf.rounds.map((round) => ({ ...round }));
-  return { people, rounds };
+  // 요금표 수정값: { 골프장id: { name?, weekday?, ... } } 형태만 받아들인다.
+  const courseEdits = {};
+  const storedEdits = stored.courseEdits && typeof stored.courseEdits === "object" ? stored.courseEdits : {};
+  golfCourses.forEach((course) => {
+    const edit = storedEdits[course.id];
+    if (!edit || typeof edit !== "object") return;
+    const clean = {};
+    if (typeof edit.name === "string") clean.name = edit.name;
+    golfNumberFields.forEach((field) => {
+      if (edit[field] != null && Number.isFinite(Number(edit[field]))) clean[field] = Number(edit[field]);
+    });
+    if (Object.keys(clean).length) courseEdits[course.id] = clean;
+  });
+  return { people, rounds, courseEdits };
 }
 
 function loadRates() {
@@ -383,14 +399,21 @@ async function fetchRates() {
 }
 
 // === 골프 ===
+// 기본 요금에 사용자의 요금표 수정값을 덮어쓴 실제 골프장 정보
 function golfCourse(id) {
-  return golfCourses.find((course) => course.id === id) || golfCourses[0];
+  const base = golfCourses.find((course) => course.id === id) || golfCourses[0];
+  const edit = golf.courseEdits[base.id];
+  return edit ? { ...base, ...edit } : base;
+}
+
+function golfCartField(people) {
+  if (people === 2) return "cart2";
+  if (people === 3) return "cart3";
+  return "cart4";
 }
 
 function golfCartPerPerson(course, people) {
-  if (people === 2) return course.cart2;
-  if (people === 3) return course.cart3;
-  return course.cart4;
+  return course[golfCartField(people)];
 }
 
 function golfRoundBreakdown(round, people) {
@@ -398,14 +421,19 @@ function golfRoundBreakdown(round, people) {
   const greenFee = round.day === "주중" ? course.weekday : course.weekend;
   const caddy = course.caddy;
   const cart = golfCartPerPerson(course, people);
-  const extra = course.insurance + course.consumable;
+  const extra = course.extra;
   return { course, greenFee, caddy, cart, extra, total: greenFee + caddy + cart + extra };
 }
 
 function renderGolf() {
-  const people = golf.people;
-  golfPeople.value = String(people);
+  golfPeople.value = String(golf.people);
+  renderGolfRounds();
+  renderGolfSummary();
+  renderGolfRefTable();
+}
 
+function renderGolfRounds() {
+  const people = golf.people;
   golfRounds.innerHTML = golf.rounds.map((round, index) => {
     const { greenFee, caddy, cart, extra, total } = golfRoundBreakdown(round, people);
     const options = golfCourses.map((course) =>
@@ -444,7 +472,10 @@ function renderGolf() {
       </article>
     `;
   }).join("");
+}
 
+function renderGolfSummary() {
+  const people = golf.people;
   const perPerson = golf.rounds.reduce((sum, round) => sum + golfRoundBreakdown(round, people).total, 0);
   const roundCount = golf.rounds.length;
   const average = roundCount ? perPerson / roundCount : 0;
@@ -468,24 +499,38 @@ function renderGolf() {
     </div>
   `;
 
+  renderGolfRefTable();
+}
+
+// 요금표: 값을 직접 수정 가능. 입력은 ₱ 기준이며 수정값은 골프 데이터에 저장된다.
+// 카트 칸은 현재 선택한 인원수(2/3/4)에 해당하는 카트 비용을 편집한다.
+function renderGolfRefTable() {
+  const people = golf.people;
+  const cartField = golfCartField(people);
   golfRefTable.innerHTML = `
-    <table>
+    <table class="golf-ref__editable">
       <thead>
         <tr><th>골프장</th><th>그린피<br>주중</th><th>그린피<br>주말</th><th>캐디</th><th>카트<br>(${people}인)</th><th>보험<br>+컨슈</th></tr>
       </thead>
       <tbody>
-        ${golfCourses.map((course) => `
-          <tr>
-            <td class="golf-ref__name">${html(course.name)} <small>${html(course.season)}</small></td>
-            <td>${phpText(course.weekday)}</td>
-            <td>${phpText(course.weekend)}</td>
-            <td>${course.caddy ? phpText(course.caddy) : "-"}</td>
-            <td>${golfCartPerPerson(course, people) ? phpText(golfCartPerPerson(course, people)) : "-"}</td>
-            <td>${course.insurance + course.consumable ? phpText(course.insurance + course.consumable) : "-"}</td>
-          </tr>
-        `).join("")}
+        ${golfCourses.map((base) => {
+          const course = golfCourse(base.id);
+          const cell = (field) => `<td><input class="golf-ref__input" inputmode="numeric" data-course="${html(base.id)}" data-field="${field}" value="${html(course[field])}" aria-label="${html(course.name)} ${field}" /></td>`;
+          return `
+          <tr data-course="${html(base.id)}">
+            <td class="golf-ref__name"><input class="golf-ref__name-input" data-course="${html(base.id)}" data-field="name" value="${html(course.name)}" aria-label="골프장 이름" /><small>${html(base.season)}</small></td>
+            ${cell("weekday")}
+            ${cell("weekend")}
+            ${cell("caddy")}
+            ${cell(cartField)}
+            ${cell("extra")}
+          </tr>`;
+        }).join("")}
       </tbody>
     </table>
+    <div class="golf-ref__actions">
+      <button class="data-button is-danger" id="resetCoursesButton" type="button">요금표 기본값으로 되돌리기</button>
+    </div>
   `;
 }
 
@@ -775,6 +820,34 @@ golfRounds.addEventListener("click", (event) => {
   if (index < 0) return;
   if (!confirm(`라운드 ${index + 1}을(를) 삭제할까요?`)) return;
   golf.rounds.splice(index, 1);
+  saveGolf();
+  renderGolf();
+});
+
+// 요금표 직접 수정 — 입력 즉시 저장하고 라운드/합계에 반영 (표 자체는 다시 그리지 않아 커서 유지)
+golfRefTable.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-course][data-field]");
+  if (!input) return;
+  const id = input.dataset.course;
+  const field = input.dataset.field;
+  if (!golfCourses.some((course) => course.id === id)) return;
+  const edits = golf.courseEdits[id] ? { ...golf.courseEdits[id] } : {};
+  if (field === "name") {
+    edits.name = input.value;
+  } else {
+    const value = Number(input.value);
+    edits[field] = Number.isFinite(value) ? value : 0;
+  }
+  golf.courseEdits[id] = edits;
+  saveGolf();
+  renderGolfRounds();
+  renderGolfSummary();
+});
+
+golfRefTable.addEventListener("click", (event) => {
+  if (!event.target.closest("#resetCoursesButton")) return;
+  if (!confirm("요금표를 기본값으로 되돌릴까요? 수정한 요금이 모두 사라집니다.")) return;
+  golf.courseEdits = {};
   saveGolf();
   renderGolf();
 });
