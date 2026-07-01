@@ -1255,27 +1255,25 @@ body.saved-mode .segments {
   margin-top: 0;
 }
 
-/* === 지출 탭 복구 (안정 버전) === */
-.spend-view .panel {
-  padding: var(--space-4);
+.golf-ref-table {
+  overflow-x: auto;
+  margin-top: 15px;
 }
 
-.spend-heading {
-  margin: 18px 0 8px !important;
-  font-size: var(--fs-md);
-  font-weight: 900;
-  color: var(--blue);
-}
-
-table {
+.golf-ref-table table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fs-base);
   margin-bottom: 20px;
 }
 
-th, td {
-  padding: 10px 12px !important;
+.golf-ref-table th {
+  background: var(--bg-subtle) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.golf-ref-table td {
+  border-bottom: 1px solid var(--border);
 }
 
 /* 숙박 및 지출 아이템 원복 */
