@@ -1297,8 +1297,26 @@ body.saved-mode .segments {
 
 
 
-/* 모바일에서도 강제 한 줄 유지 및 가로 스크롤 제공 (찌꺼기 삭제) */
+/* 추가 지출 목록: 항목당 한 줄씩 세로로 쌓기 */
+.extra-spend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
 
+/* 지출 항목 한 줄: 항목명 · 결제 · 분류 · 통화 · 금액 · 환산 · 삭제 */
+.spend-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) 120px 110px 110px 110px minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+}
 
 /* 현지결제(환전 대상) 항목은 환전 금액과 같은 색으로 구분 */
 .spend-item--onsite {
