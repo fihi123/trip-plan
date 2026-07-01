@@ -714,11 +714,22 @@ body.saved-mode .segments {
   border-bottom: 1px solid var(--line);
 }
 
-.rates .inline-field {
+/* 지출 탭 환율 입력 줄 (데스크톱 기본 레이아웃) */
+.rates-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rates .inline-field,
+.rates-section .inline-field {
   flex: 0 1 180px;
 }
 
-.rates input {
+.rates input,
+.rates-section input {
   width: 100%;
   min-height: 40px;
   border: 1px solid var(--line);
@@ -729,7 +740,8 @@ body.saved-mode .segments {
   outline: none;
 }
 
-.rates input:focus {
+.rates input:focus,
+.rates-section input:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
 }
@@ -1244,6 +1256,13 @@ body.saved-mode .segments {
 }
 
 /* 지출 페이지 소제목 */
+.spend-subtitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
 .spend-heading {
   margin: 18px 0 8px;
   font-size: var(--fs-md);
