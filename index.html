@@ -63,19 +63,27 @@
               <button class="small-action" id="exportSpendButton" type="button">엑셀 다운</button>
               <button class="small-action" id="importSpendButton" type="button">엑셀 업로드</button>
               <input id="spendExcelInput" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden />
-            <section class="spend-view is-hidden" aria-label="지출 관리">
-              <section class="panel">
-                <div class="top-summary-bar">
-                  <div class="rates-inputs-compact">
-                    <label>₱→₩ <input id="ratePhpKrw" inputmode="decimal" /></label>
-                    <label>$→₩ <input id="rateKrwUsd" inputmode="decimal" /></label>
-                    <label>$→₱ <input id="ratePhpUsd" inputmode="decimal" /></label>
-                    <button class="small-action" id="fetchRatesButton" type="button">🔄</button>
-                  </div>
-                  <div class="spend-total-bar" id="spendSummary"></div>
-                </div>
+        <section class="spend-view is-hidden" aria-label="지출 관리">
+          <section class="panel">
+            <div class="rates-section">
+              <label class="inline-field">
+                <span>₱ → ₩ (원/페소)</span>
+                <input id="ratePhpKrw" inputmode="decimal" aria-label="페소당 원화" />
+              </label>
+              <label class="inline-field">
+                <span>$ → ₩ (원/달러)</span>
+                <input id="rateKrwUsd" inputmode="decimal" aria-label="달러당 원화" />
+              </label>
+              <label class="inline-field">
+                <span>$ → ₱ (페소/달러)</span>
+                <input id="ratePhpUsd" inputmode="decimal" aria-label="달러당 페소" />
+              </label>
+              <button class="small-action" id="fetchRatesButton" type="button">환율 자동 갱신</button>
+              <span class="rates__updated" id="ratesUpdated"></span>
+            </div>
+            <div class="spend-total-bar" id="spendSummary"></div>
 
-                <div class="spend-subtitle">
+            <div class="spend-subtitle">
             <h3 class="spend-heading">숙박</h3>
           </div>
           <div class="lodging-card" id="lodgingCard">

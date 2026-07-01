@@ -697,8 +697,8 @@ function renderSpend() {
     .filter((item) => item.amount > 0)
     .sort((a, b) => a.day - b.day || b.amount - a.amount);
 
-  const moneyCells = (value) => `<td>${Math.round(value).toLocaleString()}</td><td>${Math.round(value * rates.phpToKrw).toLocaleString()}</td><td>${(rates.phpPerUsd > 0 ? value / rates.phpPerUsd : 0).toFixed(2)}</td>`;
-  const moneyInline = (value) => `<span class="spend-money">${Math.round(value).toLocaleString()} / ${Math.round(value * rates.phpToKrw).toLocaleString()} / ${(rates.phpPerUsd > 0 ? value / rates.phpPerUsd : 0).toFixed(2)}</span>`;
+  const moneyCells = (value) => `<td>${phpText(value)}</td><td>${krwText(value)}</td><td>${usdText(value)}</td>`;
+  const moneyInline = (value) => `<span class="spend-money">${phpText(value)} · ${krwText(value)} · ${usdText(value)}</span>`;
   const categoryItemRows = categoryOrder.flatMap((category) => {
     const categoryItems = items.filter((item) => item.category === category && item.amount > 0);
     if (!categoryItems.length) return [];
