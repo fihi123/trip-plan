@@ -243,6 +243,9 @@ const tripDays = document.querySelector("#tripDays");
 const tripDates = document.querySelector("#tripDates");
 const importPdfButton = document.querySelector("#importPdfButton");
 const pdfInput = document.querySelector("#pdfInput");
+const exportScheduleButton = document.querySelector("#exportScheduleButton");
+const importScheduleButton = document.querySelector("#importScheduleButton");
+const scheduleExcelInput = document.querySelector("#scheduleExcelInput");
 const memoField = document.querySelector("#memoNotes");
 const ratePhpKrw = document.querySelector("#ratePhpKrw");
 const ratePhpUsd = document.querySelector("#ratePhpUsd");
@@ -252,6 +255,9 @@ const spendSummary = document.querySelector("#spendSummary");
 const spendBreakdown = document.querySelector("#spendBreakdown");
 const extraSpendList = document.querySelector("#extraSpendList");
 const addSpendButton = document.querySelector("#addSpendButton");
+const exportSpendButton = document.querySelector("#exportSpendButton");
+const importSpendButton = document.querySelector("#importSpendButton");
+const spendExcelInput = document.querySelector("#spendExcelInput");
 const golfPeople = document.querySelector("#golfPeople");
 const golfRounds = document.querySelector("#golfRounds");
 const golfSummary = document.querySelector("#golfSummary");
@@ -1430,6 +1436,228 @@ pasteDayButton?.addEventListener("click", () => {
   saveEvents();
   renderTimeline();
   renderSpend();
+});
+
+// === 엑셀 다운로드 / 업로드 ===
+let xlsxPromise = null;
+function loadXlsx() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (xlsxPromise) return xlsxPromise;
+  xlsxPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+    script.onload = () => window.XLSX ? resolve(window.XLSX) : reject(new Error("xlsx"));
+    script.onerror = () => reject(new Error("xlsx"));
+    document.head.appendChild(script);
+  });
+  return xlsxPromise;
+}
+
+function excelDateStamp() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function cellValue(row, names) {
+  for (const name of names) {
+    if (row[name] != null && String(row[name]).trim() !== "") return row[name];
+  }
+  return "";
+}
+
+function numberCell(value) {
+  if (typeof value === "number") return value;
+  const cleaned = String(value ?? "").replace(/[^\d.-]/g, "");
+  return cleaned ? Number(cleaned) || 0 : 0;
+}
+
+function dayCell(value) {
+  const n = numberCell(value);
+  return Math.max(1, Math.min(60, Math.round(n || 1)));
+}
+
+function textCell(value) {
+  return String(value ?? "").trim();
+}
+
+function paymentCode(value) {
+  const text = textCell(value);
+  if (/현지|onsite/i.test(text)) return "onsite";
+  return "prepaid";
+}
+
+function currencyCode(value) {
+  const text = textCell(value).toUpperCase();
+  if (text.includes("PHP") || text.includes("페소") || text.includes("₱")) return "PHP";
+  if (text.includes("USD") || text.includes("달러") || text.includes("$")) return "USD";
+  return "KRW";
+}
+
+function categoryCell(value) {
+  const text = textCell(value);
+  return eventCategories.includes(text) ? text : "기타";
+}
+
+function sheetJson(XLSX, sheet) {
+  return XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
+}
+
+async function readWorkbook(file) {
+  const XLSX = await loadXlsx();
+  const buffer = await file.arrayBuffer();
+  return XLSX.read(buffer, { type: "array" });
+}
+
+function exportScheduleExcel() {
+  loadXlsx()
+    .then((XLSX) => {
+      const rows = events
+        .slice()
+        .sort((a, b) => Number(a.day || 0) - Number(b.day || 0) || String(a.start || "").localeCompare(String(b.start || "")))
+        .map((event) => ({
+          "일차": Number(event.day) || 1,
+          "시작": event.start || "",
+          "종료": event.end || "",
+          "장소/내용": event.name || "",
+          "분류": eventCategory(event),
+          "기타 분류": event.categoryCustom || "",
+          "예산(페소)": Number(event.budget || 0),
+        }));
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.json_to_sheet(rows, { header: ["일차", "시작", "종료", "장소/내용", "분류", "기타 분류", "예산(페소)"] });
+      sheet["!cols"] = [{ wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 34 }, { wch: 12 }, { wch: 14 }, { wch: 14 }];
+      XLSX.utils.book_append_sheet(workbook, sheet, "일정");
+      XLSX.writeFile(workbook, `clark-schedule-${excelDateStamp()}.xlsx`);
+    })
+    .catch(() => alert("엑셀 기능을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요."));
+}
+
+async function importScheduleExcel(file) {
+  try {
+    const XLSX = await loadXlsx();
+    const workbook = await readWorkbook(file);
+    const sheet = workbook.Sheets["일정"] || workbook.Sheets[workbook.SheetNames[0]];
+    const rows = sheetJson(XLSX, sheet);
+    const imported = rows
+      .map((row, index) => {
+        const name = textCell(cellValue(row, ["장소/내용", "일정명", "항목", "name"]));
+        if (!name) return null;
+        const categoryRaw = textCell(cellValue(row, ["분류", "category"]));
+        const category = eventCategories.includes(categoryRaw) ? categoryRaw : "기타";
+        return {
+          id: `event-${Date.now()}-${index + 1}`,
+          day: dayCell(cellValue(row, ["일차", "day"])),
+          start: textCell(cellValue(row, ["시작", "start"])),
+          end: textCell(cellValue(row, ["종료", "end"])),
+          name,
+          category,
+          categoryCustom: category === "기타" ? textCell(cellValue(row, ["기타 분류", "categoryCustom"])) || (eventCategories.includes(categoryRaw) ? "" : categoryRaw) : "",
+          budget: numberCell(cellValue(row, ["예산(페소)", "예산", "budget"])),
+        };
+      })
+      .filter(Boolean);
+    if (!imported.length) {
+      alert("가져올 일정이 없습니다. '일정' 시트의 장소/내용 컬럼을 확인해 주세요.");
+      return;
+    }
+    if (!confirm(`엑셀의 일정 ${imported.length}개로 현재 일정 항목을 교체할까요?`)) return;
+    events = imported;
+    trip.days = Math.max(trip.days, ...events.map((event) => Number(event.day) || 1));
+    trip.nights = Math.max(0, trip.days - 1);
+    syncTripDates();
+    saveEvents();
+    saveTrip();
+    state.day = String(Math.min(Number(state.day) || 1, trip.days));
+    renderTrip();
+    renderTimeline();
+    renderSpend();
+  } catch (error) {
+    console.error(error);
+    alert("엑셀 파일을 읽지 못했습니다. .xlsx 파일인지 확인해 주세요.");
+  }
+}
+
+function exportSpendExcel() {
+  loadXlsx()
+    .then((XLSX) => {
+      const workbook = XLSX.utils.book_new();
+      const extraRows = extraSpends.map((item) => ({
+        "항목": item.name || "",
+        "결제 구분": spendPaymentOf(item) === "onsite" ? "현지결제" : "선결제",
+        "분류": eventCategories.includes(item.category) ? item.category : "기타",
+        "통화": spendCurrencyOf(item),
+        "금액": Number(item.amount || 0),
+      }));
+      const allRows = spendItems()
+        .filter((item) => item.amount > 0)
+        .sort((a, b) => a.day - b.day || String(a.category).localeCompare(String(b.category)))
+        .map((item) => ({
+          "일차": item.day ? `${item.day}일차` : "추가 지출",
+          "항목": item.name,
+          "분류": item.category,
+          "페소(₱)": Math.round(item.amount),
+          "원(₩)": Math.round(item.amount * rates.phpToKrw),
+          "달러($)": Number((item.amount * rates.phpToUsd).toFixed(2)),
+        }));
+      const extraSheet = XLSX.utils.json_to_sheet(extraRows, { header: ["항목", "결제 구분", "분류", "통화", "금액"] });
+      extraSheet["!cols"] = [{ wch: 34 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 14 }];
+      const allSheet = XLSX.utils.json_to_sheet(allRows, { header: ["일차", "항목", "분류", "페소(₱)", "원(₩)", "달러($)"] });
+      allSheet["!cols"] = [{ wch: 12 }, { wch: 34 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(workbook, extraSheet, "추가지출");
+      XLSX.utils.book_append_sheet(workbook, allSheet, "전체지출");
+      XLSX.writeFile(workbook, `clark-spend-${excelDateStamp()}.xlsx`);
+    })
+    .catch(() => alert("엑셀 기능을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요."));
+}
+
+async function importSpendExcel(file) {
+  try {
+    const XLSX = await loadXlsx();
+    const workbook = await readWorkbook(file);
+    const sheet = workbook.Sheets["추가지출"] || workbook.Sheets[workbook.SheetNames[0]];
+    const rows = sheetJson(XLSX, sheet);
+    const imported = rows
+      .map((row, index) => {
+        const name = textCell(cellValue(row, ["항목", "name"]));
+        const amount = numberCell(cellValue(row, ["금액", "amount"]));
+        if (!name && !amount) return null;
+        return {
+          id: `spend-${Date.now()}-${index + 1}`,
+          name,
+          pay: paymentCode(cellValue(row, ["결제 구분", "pay"])),
+          category: categoryCell(cellValue(row, ["분류", "category"])),
+          currency: currencyCode(cellValue(row, ["통화", "currency"])),
+          amount,
+        };
+      })
+      .filter(Boolean);
+    if (!imported.length) {
+      alert("가져올 지출이 없습니다. '추가지출' 시트의 항목/금액 컬럼을 확인해 주세요.");
+      return;
+    }
+    if (!confirm(`엑셀의 추가 지출 ${imported.length}개로 현재 추가 지출 목록을 교체할까요?`)) return;
+    extraSpends = imported;
+    saveExtraSpends();
+    renderExtraSpends();
+    renderSpend();
+  } catch (error) {
+    console.error(error);
+    alert("엑셀 파일을 읽지 못했습니다. .xlsx 파일인지 확인해 주세요.");
+  }
+}
+
+exportScheduleButton?.addEventListener("click", exportScheduleExcel);
+importScheduleButton?.addEventListener("click", () => scheduleExcelInput?.click());
+scheduleExcelInput?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (file) importScheduleExcel(file);
+  scheduleExcelInput.value = "";
+});
+exportSpendButton?.addEventListener("click", exportSpendExcel);
+importSpendButton?.addEventListener("click", () => spendExcelInput?.click());
+spendExcelInput?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (file) importSpendExcel(file);
+  spendExcelInput.value = "";
 });
 
 memoField.addEventListener("input", () => {

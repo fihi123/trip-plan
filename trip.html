@@ -40,6 +40,9 @@
             <output id="visibleCount"></output>
             <button class="small-action" id="copyDayButton" type="button">이 일차 복사</button>
             <button class="small-action" id="pasteDayButton" type="button" hidden>붙여넣기</button>
+            <button class="small-action" id="exportScheduleButton" type="button">엑셀 다운</button>
+            <button class="small-action" id="importScheduleButton" type="button">엑셀 업로드</button>
+            <input id="scheduleExcelInput" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden />
             <button class="small-action" id="addEventButton" type="button">추가</button>
           </div>
         </div>
@@ -52,6 +55,11 @@
             <div>
               <p class="eyebrow">Budget</p>
               <h2 id="spendTitle">지출 내역</h2>
+            </div>
+            <div class="section-actions">
+              <button class="small-action" id="exportSpendButton" type="button">엑셀 다운</button>
+              <button class="small-action" id="importSpendButton" type="button">엑셀 업로드</button>
+              <input id="spendExcelInput" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden />
             </div>
           </div>
           <div class="rates">
