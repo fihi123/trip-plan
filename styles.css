@@ -1165,7 +1165,7 @@ body.saved-mode .segments {
 
 .lodging-card {
   display: grid;
-  grid-template-columns: 150px 110px 90px 90px minmax(0, 1fr);
+  grid-template-columns: 110px 150px 110px 90px 90px minmax(0, 1fr);
   gap: 10px;
   align-items: end;
   margin-bottom: 8px;

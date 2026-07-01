@@ -85,6 +85,13 @@
           </div>
           <div class="lodging-card" id="lodgingCard">
             <label class="inline-field">
+              <span>결제</span>
+              <select id="lodgingPay" aria-label="숙박 결제 구분">
+                <option value="prepaid">선결제</option>
+                <option value="onsite">현지결제</option>
+              </select>
+            </label>
+            <label class="inline-field">
               <span>1박 금액</span>
               <input id="lodgingNightly" inputmode="numeric" aria-label="숙박 1박 금액" />
             </label>

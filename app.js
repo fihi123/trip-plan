@@ -43,7 +43,7 @@ const baseEvents = [
 ];
 
 const defaultTrip = { nights: 3, days: 4 };
-const defaultLodging = { nightly: 0, currency: "PHP", people: 4, nights: defaultTrip.nights };
+const defaultLodging = { nightly: 0, currency: "PHP", people: 4, nights: defaultTrip.nights, pay: "prepaid" };
 const spendCurrencies = ["KRW", "PHP", "USD"];
 
 // ⛳ 골프 비용 데이터 (clark_golf_calculator.xlsx DATA 시트에서 이전)
@@ -173,6 +173,7 @@ function loadLodging() {
     currency,
     people: Number(stored.people) >= 1 ? Math.min(60, Math.round(Number(stored.people))) : defaultLodging.people,
     nights: Number(stored.nights) >= 0 ? Math.min(60, Math.round(Number(stored.nights))) : trip.nights,
+    pay: stored.pay === "onsite" ? "onsite" : defaultLodging.pay,
   };
 }
 
@@ -279,6 +280,7 @@ const exportSpendButton = document.querySelector("#exportSpendButton");
 const importSpendButton = document.querySelector("#importSpendButton");
 const spendExcelInput = document.querySelector("#spendExcelInput");
 const lodgingNightly = document.querySelector("#lodgingNightly");
+const lodgingPay = document.querySelector("#lodgingPay");
 const lodgingCurrency = document.querySelector("#lodgingCurrency");
 const lodgingPeople = document.querySelector("#lodgingPeople");
 const lodgingNights = document.querySelector("#lodgingNights");
@@ -370,6 +372,7 @@ function lodgingBreakdown() {
   const people = Math.max(1, Math.round(Number(lodging.people) || 1));
   const nights = Math.max(0, Math.round(Number(lodging.nights) || 0));
   const currency = spendCurrencies.includes(lodging.currency) ? lodging.currency : defaultLodging.currency;
+  const pay = lodging.pay === "onsite" ? "onsite" : "prepaid";
   const groupTotalOriginal = nightly * nights;
   const perPersonNightOriginal = nightly / people;
   const perPersonTotalOriginal = perPersonNightOriginal * nights;
@@ -380,6 +383,7 @@ function lodgingBreakdown() {
     people,
     nights,
     currency,
+    pay,
     groupTotalOriginal,
     perPersonNightOriginal,
     perPersonTotalOriginal,
@@ -643,6 +647,7 @@ function spendItems() {
         day: 0,
         category: "숙소",
         amount: lodgingCost.perPersonTotalPhp,
+        prepaid: lodgingCost.pay === "prepaid",
       }]
     : [];
   return [...fromEvents, ...fromGolf, ...fromLodging, ...fromExtra];
@@ -650,11 +655,13 @@ function spendItems() {
 
 function renderLodging() {
   const cost = lodgingBreakdown();
+  if (document.activeElement !== lodgingPay) lodgingPay.value = cost.pay;
   if (document.activeElement !== lodgingNightly) lodgingNightly.value = cost.nightly ? String(cost.nightly) : "";
   if (document.activeElement !== lodgingPeople) lodgingPeople.value = String(cost.people);
   if (document.activeElement !== lodgingNights) lodgingNights.value = String(cost.nights);
   if (document.activeElement !== lodgingCurrency) lodgingCurrency.value = cost.currency;
   lodgingSummary.innerHTML = `
+    <span>결제 <strong>${cost.pay === "onsite" ? "현지결제" : "선결제"}</strong></span>
     <span>1인당 1박 <strong>${originalMoneyText(cost.perPersonNightOriginal, cost.currency)}</strong></span>
     <span>1인 총액 <strong>${phpText(cost.perPersonTotalPhp)}</strong> · ${krwText(cost.perPersonTotalPhp)} · ${usdText(cost.perPersonTotalPhp)}</span>
     <span>객실 총액 ${originalMoneyText(cost.groupTotalOriginal, cost.currency)} (${phpText(cost.groupTotalPhp)})</span>
@@ -2009,6 +2016,7 @@ function applyLodgingField(target) {
   if (field === "lodgingPeople") lodging.people = Math.max(1, Math.min(60, Math.round(Number(target.value) || 1)));
   if (field === "lodgingNights") lodging.nights = Math.max(0, Math.min(60, Math.round(Number(target.value) || 0)));
   if (field === "lodgingCurrency") lodging.currency = spendCurrencies.includes(target.value) ? target.value : defaultLodging.currency;
+  if (field === "lodgingPay") lodging.pay = target.value === "onsite" ? "onsite" : "prepaid";
   saveLodging();
   renderTrip();
   renderLodging();
@@ -2020,6 +2028,7 @@ function applyLodgingField(target) {
 });
 
 lodgingCurrency.addEventListener("change", (event) => applyLodgingField(event.target));
+lodgingPay.addEventListener("change", (event) => applyLodgingField(event.target));
 
 function findExtraSpend(target) {
   const card = target.closest(".spend-item");
