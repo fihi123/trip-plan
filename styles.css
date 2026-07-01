@@ -1276,57 +1276,7 @@ body.saved-mode .segments {
   border-bottom: 1px solid var(--border);
 }
 
-/* 숙박 및 지출 아이템 원복 */
-.lodging-card {
-  display: grid !important;
-  grid-template-columns: 110px 150px 110px 90px 90px minmax(0, 1fr) !important;
-  gap: 10px !important;
-  align-items: end !important;
-  padding: 12px !important;
-  border-left: 4px solid var(--teal) !important;
-}
 
-.spend-item {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1.3fr) 120px 100px 100px 95px minmax(0, 1fr) 34px !important;
-  gap: 8px !important;
-  align-items: center !important;
-  padding: 8px !important;
-}
-
-.spend-item__conv {
-  font-size: var(--fs-caption) !important;
-  background: transparent !important;
-  padding: 0 !important;
-}
-
-/* 요약 영역 원복 */
-.top-summary-bar {
-  display: block !important;
-  background: transparent !important;
-  padding: 0 !important;
-  border: none !important;
-  margin-bottom: 0 !important;
-}
-
-.rates-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.spend-total-bar {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px !important;
-}
-
-.spend-total-bar__item {
-  padding: 16px !important;
-  border-left: 4px solid var(--teal) !important;
-}
 
 /* 모바일에서도 강제 한 줄 유지 및 가로 스크롤 제공 (찌꺼기 삭제) */
 
