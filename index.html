@@ -81,13 +81,40 @@
           <div class="spend-total-bar" id="spendSummary"></div>
 
           <div class="spend-subtitle">
+            <h3 class="spend-heading">숙박</h3>
+          </div>
+          <div class="lodging-card" id="lodgingCard">
+            <label class="inline-field">
+              <span>1박 금액</span>
+              <input id="lodgingNightly" inputmode="numeric" aria-label="숙박 1박 금액" />
+            </label>
+            <label class="inline-field">
+              <span>통화</span>
+              <select id="lodgingCurrency" aria-label="숙박 통화">
+                <option value="KRW">₩ 원</option>
+                <option value="PHP">₱ 페소</option>
+                <option value="USD">$ 달러</option>
+              </select>
+            </label>
+            <label class="inline-field">
+              <span>인원</span>
+              <input id="lodgingPeople" inputmode="numeric" aria-label="숙박 인원" />
+            </label>
+            <label class="inline-field">
+              <span>박수</span>
+              <input id="lodgingNights" inputmode="numeric" aria-label="숙박 박수" />
+            </label>
+            <output class="lodging-card__result" id="lodgingSummary"></output>
+          </div>
+
+          <div class="spend-subtitle">
             <h3 class="spend-heading">선결제 / 현지결제 추가 지출</h3>
             <button class="small-action" id="addSpendButton" type="button">추가</button>
           </div>
           <div class="extra-spend-list" id="extraSpendList"></div>
 
           <div class="golf-ref-table" id="spendBreakdown"></div>
-          <p class="memo-hint">총액은 일정 + 골프(1인) + 추가 지출을 모두 더한 값입니다. 환전 금액은 여기서 선결제 항목만 뺀 값(현지에서 쓸 돈)입니다. 통화가 달라도 환율로 환산해 합산됩니다.</p>
+          <p class="memo-hint">총액은 일정 + 숙박(1인) + 골프(1인) + 추가 지출을 모두 더한 값입니다. 환전 금액은 여기서 선결제 항목만 뺀 값(현지에서 쓸 돈)입니다. 통화가 달라도 환율로 환산해 합산됩니다.</p>
         </section>
       </section>
 

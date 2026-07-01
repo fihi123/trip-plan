@@ -43,6 +43,8 @@ const baseEvents = [
 ];
 
 const defaultTrip = { nights: 3, days: 4 };
+const defaultLodging = { nightly: 0, currency: "PHP", people: 4, nights: defaultTrip.nights };
+const spendCurrencies = ["KRW", "PHP", "USD"];
 
 // ⛳ 골프 비용 데이터 (clark_golf_calculator.xlsx DATA 시트에서 이전)
 // cart2/cart3/cart4 = 인원수(2/3/4)에 따른 1인당 카트 비용, extra = 보험+컨슈머블
@@ -81,6 +83,7 @@ const golfStorageKey = "clark-golf-v1";
 const tripStorageKey = "clark-trip-v1";
 const ratesStorageKey = "clark-rates-v1";
 const extraSpendStorageKey = "clark-extra-spend-v1";
+const lodgingStorageKey = "clark-lodging-v1";
 const seededKey = "clark-seeded-v1";
 // 저장된 일정 목록(스냅샷)을 담는 로컬 키 — 클라우드 미설정 시 폴백 저장소
 const savedTripsKey = "clark-saved-trips-v1";
@@ -106,7 +109,7 @@ const cloudOn = () => Boolean(firebaseConfig.projectId && firebaseConfig.apiKey 
 const firestoreBase = () =>
   `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`;
 
-const backupKeys = [eventStorageKey, memoHtmlStorageKey, golfStorageKey, tripStorageKey, ratesStorageKey, extraSpendStorageKey];
+const backupKeys = [eventStorageKey, memoHtmlStorageKey, golfStorageKey, tripStorageKey, ratesStorageKey, extraSpendStorageKey, lodgingStorageKey];
 const jsonBackupKeys = backupKeys.filter((key) => key !== memoHtmlStorageKey);
 
 // 시드 완료 표시가 있으면 비어 있어도 기본 일정을 다시 만들지 않는다(완전 초기화 후 빈 상태 유지).
@@ -124,11 +127,13 @@ let trip = loadTrip();
 let golf = loadGolf();
 let rates = loadRates();
 let extraSpends = loadStoredArray(extraSpendStorageKey);
+let lodging = loadLodging();
 
 // 최초 실행(시드 전)에만 기본 일정/골프를 저장해 두고, 이후에는 빈 상태가 기본이 되도록 표시한다.
 if (!seeded) {
   localStorage.setItem(eventStorageKey, JSON.stringify(events));
   localStorage.setItem(golfStorageKey, JSON.stringify(golf));
+  localStorage.setItem(lodgingStorageKey, JSON.stringify(lodging));
   localStorage.setItem(seededKey, "done");
 }
 
@@ -158,6 +163,17 @@ function loadTrip() {
   const startDate = isoRe.test(stored.startDate) ? stored.startDate : "";
   const endDate = isoRe.test(stored.endDate) ? stored.endDate : "";
   return { nights, days, startDate, endDate };
+}
+
+function loadLodging() {
+  const stored = loadStoredObject(lodgingStorageKey);
+  const currency = spendCurrencies.includes(stored.currency) ? stored.currency : defaultLodging.currency;
+  return {
+    nightly: Number(stored.nightly) >= 0 ? Number(stored.nightly) : defaultLodging.nightly,
+    currency,
+    people: Number(stored.people) >= 1 ? Math.min(60, Math.round(Number(stored.people))) : defaultLodging.people,
+    nights: Number(stored.nights) >= 0 ? Math.min(60, Math.round(Number(stored.nights))) : trip.nights,
+  };
 }
 
 function loadGolf() {
@@ -262,6 +278,11 @@ const addSpendButton = document.querySelector("#addSpendButton");
 const exportSpendButton = document.querySelector("#exportSpendButton");
 const importSpendButton = document.querySelector("#importSpendButton");
 const spendExcelInput = document.querySelector("#spendExcelInput");
+const lodgingNightly = document.querySelector("#lodgingNightly");
+const lodgingCurrency = document.querySelector("#lodgingCurrency");
+const lodgingPeople = document.querySelector("#lodgingPeople");
+const lodgingNights = document.querySelector("#lodgingNights");
+const lodgingSummary = document.querySelector("#lodgingSummary");
 const golfPeople = document.querySelector("#golfPeople");
 const golfRounds = document.querySelector("#golfRounds");
 const golfSummary = document.querySelector("#golfSummary");
@@ -324,8 +345,9 @@ function saveExtraSpends() {
   localStorage.setItem(extraSpendStorageKey, JSON.stringify(extraSpends));
 }
 
-// 선결제 등 통화별 금액을 페소 기준으로 환산 (KRW/USD → PHP)
-const spendCurrencies = ["KRW", "PHP", "USD"];
+function saveLodging() {
+  localStorage.setItem(lodgingStorageKey, JSON.stringify(lodging));
+}
 
 function spendCurrencyOf(item) {
   return spendCurrencies.includes(item.currency) ? item.currency : "KRW";
@@ -341,6 +363,35 @@ function toPhp(amount, currency) {
   if (currency === "PHP") return value;
   if (currency === "USD") return rates.phpPerUsd > 0 ? value * rates.phpPerUsd : 0;
   return rates.phpToKrw > 0 ? value / rates.phpToKrw : 0;
+}
+
+function lodgingBreakdown() {
+  const nightly = Math.max(0, Number(lodging.nightly) || 0);
+  const people = Math.max(1, Math.round(Number(lodging.people) || 1));
+  const nights = Math.max(0, Math.round(Number(lodging.nights) || 0));
+  const currency = spendCurrencies.includes(lodging.currency) ? lodging.currency : defaultLodging.currency;
+  const groupTotalOriginal = nightly * nights;
+  const perPersonNightOriginal = nightly / people;
+  const perPersonTotalOriginal = perPersonNightOriginal * nights;
+  const perPersonTotalPhp = toPhp(perPersonTotalOriginal, currency);
+  const groupTotalPhp = toPhp(groupTotalOriginal, currency);
+  return {
+    nightly,
+    people,
+    nights,
+    currency,
+    groupTotalOriginal,
+    perPersonNightOriginal,
+    perPersonTotalOriginal,
+    perPersonTotalPhp,
+    groupTotalPhp,
+  };
+}
+
+function originalMoneyText(value, currency) {
+  if (currency === "PHP") return `₱${Math.round(value).toLocaleString("ko-KR")}`;
+  if (currency === "USD") return `$${Number(value || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  return `₩${Math.round(value).toLocaleString("ko-KR")}`;
 }
 
 function saveMemo() {
@@ -553,8 +604,9 @@ function renderDaySegments() {
 function renderTrip() {
   if (document.activeElement !== tripNights) tripNights.value = String(trip.nights);
   if (document.activeElement !== tripDays) tripDays.value = String(trip.days);
+  const lodgingText = lodging.nights !== trip.nights ? ` · 숙박 ${lodging.nights}박` : "";
   tripDates.textContent = trip.startDate
-    ? `✈️ ${trip.startDate}(${isoDowKr(trip.startDate)}) 출국 ~ ${trip.endDate}(${isoDowKr(trip.endDate)}) 귀국 · ${trip.nights}박 ${trip.days}일`
+    ? `✈️ ${trip.startDate}(${isoDowKr(trip.startDate)}) 출국 ~ ${trip.endDate}(${isoDowKr(trip.endDate)}) 귀국 · ${trip.nights}박 ${trip.days}일${lodgingText}`
     : "";
   renderDaySegments();
 }
@@ -584,7 +636,29 @@ function spendItems() {
     amount: toPhp(item.amount, spendCurrencyOf(item)),
     prepaid: spendPaymentOf(item) === "prepaid", // 선결제만 환전 금액에서 제외
   }));
-  return [...fromEvents, ...fromGolf, ...fromExtra];
+  const lodgingCost = lodgingBreakdown();
+  const fromLodging = lodgingCost.perPersonTotalPhp > 0
+    ? [{
+        name: `🏨 숙박 (${lodgingCost.nights}박, ${lodgingCost.people}명)`,
+        day: 0,
+        category: "숙소",
+        amount: lodgingCost.perPersonTotalPhp,
+      }]
+    : [];
+  return [...fromEvents, ...fromGolf, ...fromLodging, ...fromExtra];
+}
+
+function renderLodging() {
+  const cost = lodgingBreakdown();
+  if (document.activeElement !== lodgingNightly) lodgingNightly.value = cost.nightly ? String(cost.nightly) : "";
+  if (document.activeElement !== lodgingPeople) lodgingPeople.value = String(cost.people);
+  if (document.activeElement !== lodgingNights) lodgingNights.value = String(cost.nights);
+  if (document.activeElement !== lodgingCurrency) lodgingCurrency.value = cost.currency;
+  lodgingSummary.innerHTML = `
+    <span>1인당 1박 <strong>${originalMoneyText(cost.perPersonNightOriginal, cost.currency)}</strong></span>
+    <span>1인 총액 <strong>${phpText(cost.perPersonTotalPhp)}</strong> · ${krwText(cost.perPersonTotalPhp)} · ${usdText(cost.perPersonTotalPhp)}</span>
+    <span>객실 총액 ${originalMoneyText(cost.groupTotalOriginal, cost.currency)} (${phpText(cost.groupTotalPhp)})</span>
+  `;
 }
 
 function renderSpend() {
@@ -661,7 +735,7 @@ function renderSpend() {
     <table>
       <thead><tr><th>일차</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
       <tbody>
-        ${days.map((day) => `<tr><td class="golf-ref__name">${day ? `${day}일차` : "선결제"}</td>${moneyCells(byDay.get(day))}</tr>`).join("")}
+        ${days.map((day) => `<tr><td class="golf-ref__name">${day ? `${day}일차` : "공통/추가"}</td>${moneyCells(byDay.get(day))}</tr>`).join("")}
         <tr class="spend-total-row"><td class="golf-ref__name">합계</td>${moneyCells(total)}</tr>
       </tbody>
     </table>
@@ -670,7 +744,7 @@ function renderSpend() {
     <table>
       <thead><tr><th>일차</th><th>항목</th><th>분류</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
       <tbody>
-        ${detailRows.map((item) => `<tr><td>${item.day ? `${item.day}일차` : "선결제"}</td><td class="golf-ref__name">${html(item.name)}</td><td>${html(item.category)}</td>${moneyCells(item.amount)}</tr>`).join("")}
+        ${detailRows.map((item) => `<tr><td>${item.day ? `${item.day}일차` : item.prepaid ? "선결제" : "공통/추가"}</td><td class="golf-ref__name">${html(item.name)}</td><td>${html(item.category)}</td>${moneyCells(item.amount)}</tr>`).join("")}
       </tbody>
     </table>
   `;
@@ -735,6 +809,7 @@ async function fetchRates() {
     rates.updatedAt = data.time_last_update_utc || new Date().toLocaleString("ko-KR");
     saveRates();
     renderRates();
+    renderLodging();
     renderExtraSpends();
     renderSpend();
     renderGolf();
@@ -955,6 +1030,7 @@ function renderAll() {
   renderTimeline();
   renderMemo();
   renderRates();
+  renderLodging();
   renderExtraSpends();
   renderSpend();
   renderGolf();
@@ -1308,26 +1384,40 @@ function syncTripDates() {
   if (trip.startDate) trip.endDate = isoAddDays(trip.startDate, trip.days - 1);
 }
 
+function syncLodgingNightsWithTrip(previousTripNights) {
+  if (Number(lodging.nights) !== Number(previousTripNights)) return;
+  lodging.nights = trip.nights;
+  saveLodging();
+}
+
 tripNights.addEventListener("input", () => {
+  const previousTripNights = trip.nights;
   const nights = Math.max(0, Math.min(60, Math.round(Number(tripNights.value) || 0)));
   trip.nights = nights;
   trip.days = nights + 1;
   tripDays.value = String(trip.days);
   syncTripDates();
+  syncLodgingNightsWithTrip(previousTripNights);
   saveTrip();
   renderTrip();
+  renderLodging();
   renderTimeline();
+  renderSpend();
 });
 
 tripDays.addEventListener("input", () => {
+  const previousTripNights = trip.nights;
   const days = Math.max(1, Math.min(60, Math.round(Number(tripDays.value) || 1)));
   trip.days = days;
   trip.nights = Math.max(0, days - 1);
   tripNights.value = String(trip.nights);
   syncTripDates();
+  syncLodgingNightsWithTrip(previousTripNights);
   saveTrip();
   renderTrip();
+  renderLodging();
   renderTimeline();
+  renderSpend();
 });
 
 // === 여정안내서(PDF) 자동 인식 ===
@@ -1457,10 +1547,12 @@ async function importItineraryPdf(file) {
     );
     if (!ok) return;
 
+    const previousTripNights = trip.nights;
     trip.startDate = result.startDate;
     trip.endDate = result.endDate;
     trip.days = result.days;
     trip.nights = result.nights;
+    syncLodgingNightsWithTrip(previousTripNights);
     saveTrip();
 
     // 이전에 PDF로 넣은 항목(비행 일정/항공료)을 지우고 새로 추가한다.
@@ -1482,6 +1574,7 @@ async function importItineraryPdf(file) {
     saveExtraSpends();
     renderTrip();
     renderTimeline();
+    renderLodging();
     renderExtraSpends();
     renderSpend();
   } catch (error) {
@@ -1723,14 +1816,17 @@ async function importScheduleExcel(file) {
     );
     if (!resizeTrip) return;
     events = imported;
+    const previousTripNights = trip.nights;
     trip.days = maxDay;
     trip.nights = Math.max(0, trip.days - 1);
     syncTripDates();
+    syncLodgingNightsWithTrip(previousTripNights);
     saveEvents();
     saveTrip();
     state.day = String(Math.min(Number(state.day) || 1, trip.days));
     renderTrip();
     renderTimeline();
+    renderLodging();
     renderSpend();
   } catch (error) {
     console.error(error);
@@ -1753,7 +1849,7 @@ function exportSpendExcel() {
         .filter((item) => item.amount > 0)
         .sort((a, b) => a.day - b.day || String(a.category).localeCompare(String(b.category)))
         .map((item) => ({
-          "일차": item.day ? `${item.day}일차` : "추가 지출",
+          "일차": item.day ? `${item.day}일차` : item.prepaid ? "선결제" : "공통/추가",
           "항목": item.name,
           "분류": item.category,
           "페소(₱)": Math.round(item.amount),
@@ -1871,6 +1967,7 @@ ratePhpKrw.addEventListener("input", () => {
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
   renderRates();
+  renderLodging();
   renderExtraSpends();
   renderSpend();
   renderGolf();
@@ -1884,6 +1981,7 @@ rateKrwUsd.addEventListener("input", () => {
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
   renderRates();
+  renderLodging();
   renderExtraSpends();
   renderSpend();
   renderGolf();
@@ -1897,12 +1995,31 @@ ratePhpUsd.addEventListener("input", () => {
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
   renderRates();
+  renderLodging();
   renderExtraSpends();
   renderSpend();
   renderGolf();
 });
 
 fetchRatesButton.addEventListener("click", fetchRates);
+
+function applyLodgingField(target) {
+  const field = target.id;
+  if (field === "lodgingNightly") lodging.nightly = Math.max(0, Number(target.value) || 0);
+  if (field === "lodgingPeople") lodging.people = Math.max(1, Math.min(60, Math.round(Number(target.value) || 1)));
+  if (field === "lodgingNights") lodging.nights = Math.max(0, Math.min(60, Math.round(Number(target.value) || 0)));
+  if (field === "lodgingCurrency") lodging.currency = spendCurrencies.includes(target.value) ? target.value : defaultLodging.currency;
+  saveLodging();
+  renderTrip();
+  renderLodging();
+  renderSpend();
+}
+
+[lodgingNightly, lodgingPeople, lodgingNights].forEach((input) => {
+  input.addEventListener("input", (event) => applyLodgingField(event.target));
+});
+
+lodgingCurrency.addEventListener("change", (event) => applyLodgingField(event.target));
 
 function findExtraSpend(target) {
   const card = target.closest(".spend-item");
