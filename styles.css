@@ -1322,25 +1322,68 @@ td {
   font-size: 12px !important;
 }
 
-/* 요약 바 압축 */
-.spend-total-bar {
+/* 요약 바 압축 및 통합 */
+.top-summary-bar {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-surface);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.rates-inputs-compact {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 10px !important;
+  font-size: 11px;
+}
+
+.rates-inputs-compact label {
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.rates-inputs-compact input {
+  width: 50px !important;
+  height: 24px !important;
+  padding: 0 4px !important;
+  font-size: 11px !important;
+  text-align: right;
+  background: #000 !important;
+  border: 1px solid var(--border-strong) !important;
+}
+
+.spend-total-bar {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 0 !important;
 }
 
 .spend-total-bar__item {
   flex: 1;
-  padding: 6px 10px !important;
-  border-left: 3px solid var(--accent) !important;
+  padding: 0 0 0 10px !important;
+  border-left: 2px solid var(--accent) !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
 }
 
 .spend-total-bar__label {
-  font-size: 11px;
+  font-size: 10px;
+  color: var(--text-muted);
+  display: block;
 }
 
 .spend-total-bar__amounts {
-  font-size: 14px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 

@@ -796,9 +796,9 @@ function renderExtraSpends() {
 
 // === 환율 ===
 function renderRates() {
-  if (document.activeElement !== ratePhpKrw) ratePhpKrw.value = String(rates.phpToKrw);
-  if (document.activeElement !== rateKrwUsd) rateKrwUsd.value = String(rates.krwPerUsd);
-  if (document.activeElement !== ratePhpUsd) ratePhpUsd.value = String(rates.phpPerUsd);
+  if (document.activeElement !== ratePhpKrw) ratePhpKrw.value = Number(rates.phpToKrw).toFixed(2);
+  if (document.activeElement !== rateKrwUsd) rateKrwUsd.value = Number(rates.krwPerUsd).toFixed(2);
+  if (document.activeElement !== ratePhpUsd) ratePhpUsd.value = Number(rates.phpPerUsd).toFixed(2);
   ratesUpdated.textContent = rates.updatedAt ? `갱신: ${rates.updatedAt}` : "직접 입력 또는 자동 갱신";
 }
 
