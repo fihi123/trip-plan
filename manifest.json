@@ -1,0 +1,21 @@
+{
+  "name": "클락(앙헬레스) 여행 플래너",
+  "short_name": "클락 플래너",
+  "description": "골프 비용 계산 및 일정 관리를 위한 클락 전용 여행 플래너",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f0ec",
+  "theme_color": "#ea1d22",
+  "icons": [
+    {
+      "src": "assets/clark-hero.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/clark-hero.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

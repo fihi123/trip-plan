@@ -1,0 +1,23 @@
+{
+  "hosting": {
+    "site": "trip-plan-4b079",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "src/**",
+      "작업내역.md",
+      "클라우드설정.md",
+      "*.xlsx",
+      "*.pdf",
+      "*.backup"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

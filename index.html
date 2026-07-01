@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>클락(앙헬레스) 여행 플래너</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#ea1d22" />
+    <link rel="stylesheet" href="design-system/tokens.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -194,6 +197,13 @@
       </dialog>
     </main>
 
-    <script src="app.js"></script>
+    <script type="module" src="src/main.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW register error:', err));
+        });
+      }
+    </script>
   </body>
 </html>

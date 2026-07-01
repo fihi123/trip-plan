@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COSMAX 디자인 시스템</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="ds.css">
+</head>
+<body>
+<div class="sg-shell">
+
+  <!-- ===================== 사이드 내비 ===================== -->
+  <nav class="sg-nav">
+    <div class="sg-nav-brand"><img src="assets/cosmax-logo.png" alt="COSMAX"></div>
+    <div class="sg-nav-title">Design System</div>
+
+    <div class="sg-nav-group">기초</div>
+    <a href="#foundations" class="active">개요 · 원칙</a>
+    <a href="#color">색상</a>
+    <a href="#type">타이포그래피</a>
+    <a href="#scale">간격 · 모서리 · 그림자</a>
+
+    <div class="sg-nav-group">컴포넌트</div>
+    <a href="#buttons">버튼</a>
+    <a href="#badges">상태 배지</a>
+    <a href="#cards">스탯 카드</a>
+    <a href="#forms">폼 · 입력</a>
+    <a href="#table">테이블</a>
+    <a href="#nav">헤더 · 탭</a>
+    <a href="#feedback">배너 · 스낵바</a>
+    <a href="#flow">프로세스 · 디테일</a>
+    <a href="#modal">모달</a>
+
+    <div class="sg-nav-group">확장 (신규 제안)</div>
+    <a href="#new">신규 컴포넌트</a>
+  </nav>
+
+  <!-- ===================== 본문 ===================== -->
+  <main class="sg-main">
+
+    <!-- HERO -->
+    <header class="sg-hero">
+      <img src="assets/cosmax-logo.png" alt="COSMAX">
+      <h1>COSMAX 디자인 시스템</h1>
+      <p class="lede">시생산 통합 관리 시스템(INPMS)에서 추출해 전사 업무 시스템 표준으로 정제한
+        시각 언어입니다. 따뜻한 뉴트럴 캔버스 위에 브랜드 레드를 절제해 사용하고,
+        상태는 색으로 명확히 구분합니다.</p>
+      <div class="meta">
+        <span class="pill">v1.0 · 2026.06</span>
+        <span class="pill">Light theme</span>
+        <span class="pill">Pretendard</span>
+        <span class="pill">전사 업무 시스템용</span>
+      </div>
+    </header>
+
+    <!-- FOUNDATIONS -->
+    <section class="sg-section" id="foundations">
+      <h2>개요 · 원칙 <span class="en">Principles</span></h2>
+      <p class="sec-desc">네 가지 원칙이 모든 화면 결정의 기준입니다.</p>
+      <div class="sg-grid c2" style="margin-top:24px">
+        <div class="sg-cell">
+          <div class="section">
+            <div class="section-title">01 · 절제된 브랜드</div>
+            <p class="sg-note" style="margin:0">레드(<code class="tok">--accent</code>)는 주요 액션·활성 상태·포커스에만.
+              화면을 빨갛게 칠하지 않습니다. 면은 따뜻한 뉴트럴이 기본입니다.</p>
+          </div>
+        </div>
+        <div class="sg-cell">
+          <div class="section">
+            <div class="section-title">02 · 색은 의미다</div>
+            <p class="sg-note" style="margin:0">파랑=진행/안내, 초록=완료, 빨강=문제, 주황=주의.
+              상태색은 장식이 아니라 정보입니다.</p>
+          </div>
+        </div>
+        <div class="sg-cell">
+          <div class="section">
+            <div class="section-title">03 · 밀도 높은 명료함</div>
+            <p class="sg-note" style="margin:0">업무 데이터가 많은 화면. 얇은 경계선과 낮은 그림자로
+              정보를 누르지 않되 구조는 또렷하게.</p>
+          </div>
+        </div>
+        <div class="sg-cell">
+          <div class="section">
+            <div class="section-title">04 · 한글 우선</div>
+            <p class="sg-note" style="margin:0">Pretendard, 음수 자간으로 한글 가독성 최적화.
+              본문 14px를 기준으로 한 절제된 타입 스케일.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLOR -->
+    <section class="sg-section" id="color">
+      <h2>색상 <span class="en">Color</span></h2>
+      <p class="sec-desc">스와치를 클릭하면 변수명이 복사됩니다.</p>
+
+      <div class="sg-sub">캔버스 · 뉴트럴</div>
+      <div class="swatch-grid" data-swatches="neutral"></div>
+
+      <div class="sg-sub">브랜드 — COSMAX Red</div>
+      <p class="sg-note">아이덴티티 · 주요 액션 · 활성/포커스 전용. 텍스트 강조엔 쓰지 않습니다.</p>
+      <div class="swatch-grid" data-swatches="brand"></div>
+
+      <div class="sg-sub">상태 — Status</div>
+      <p class="sg-note">각 상태는 본색 / soft(배경) / border 3종으로 구성됩니다.</p>
+      <div class="swatch-grid" data-swatches="status"></div>
+    </section>
+
+    <!-- TYPE -->
+    <section class="sg-section" id="type">
+      <h2>타이포그래피 <span class="en">Typography</span></h2>
+      <p class="sec-desc">Pretendard · 본문 14px 기준 · 자간 −0.005em(제목 −0.01em)</p>
+      <div class="sg-demo col" style="margin-top:20px" id="type-specimens"></div>
+    </section>
+
+    <!-- SCALE -->
+    <section class="sg-section" id="scale">
+      <h2>간격 · 모서리 · 그림자 <span class="en">Spacing · Radius · Elevation</span></h2>
+
+      <div class="sg-sub">간격 스케일 <span style="font-weight:500;color:var(--text-faint);font-size:var(--fs-xs)">4px 기준</span></div>
+      <div class="sg-demo col" id="space-scale"></div>
+
+      <div class="sg-sub">모서리 반경</div>
+      <div class="sg-demo">
+        <div class="sg-cell" style="align-items:center"><div class="radius-box" style="border-radius:var(--radius-sm)"></div><span class="sg-cell-label">sm · <code>5px</code></span></div>
+        <div class="sg-cell" style="align-items:center"><div class="radius-box" style="border-radius:var(--radius)"></div><span class="sg-cell-label">base · <code>8px</code></span></div>
+        <div class="sg-cell" style="align-items:center"><div class="radius-box" style="border-radius:var(--radius-lg)"></div><span class="sg-cell-label">lg · <code>12px</code></span></div>
+        <div class="sg-cell" style="align-items:center"><div class="radius-box" style="border-radius:var(--radius-pill)"></div><span class="sg-cell-label">pill · <code>999px</code></span></div>
+      </div>
+
+      <div class="sg-sub">그림자 — 따뜻한 레이어</div>
+      <div class="sg-demo" style="gap:28px">
+        <div class="sg-cell" style="align-items:center"><div class="shadow-box" style="box-shadow:var(--shadow-sm)"></div><span class="sg-cell-label">sm</span></div>
+        <div class="sg-cell" style="align-items:center"><div class="shadow-box" style="box-shadow:var(--shadow-card)"></div><span class="sg-cell-label">card</span></div>
+        <div class="sg-cell" style="align-items:center"><div class="shadow-box" style="box-shadow:var(--shadow-lift)"></div><span class="sg-cell-label">lift</span></div>
+        <div class="sg-cell" style="align-items:center"><div class="shadow-box" style="box-shadow:var(--shadow-modal)"></div><span class="sg-cell-label">modal</span></div>
+      </div>
+    </section>
+
+    <!-- BUTTONS -->
+    <section class="sg-section" id="buttons">
+      <h2>버튼 <span class="en">Buttons</span></h2>
+      <p class="sec-desc">한 화면에 Primary는 하나. 나머지 액션은 outline/secondary로.</p>
+      <div class="sg-demo" style="margin-top:20px">
+        <button class="btn btn-primary">저장</button>
+        <button class="btn btn-secondary">보조 액션</button>
+        <button class="btn btn-outline">취소</button>
+        <button class="btn btn-danger">삭제</button>
+        <button class="btn btn-outline btn-sm">작은 버튼</button>
+      </div>
+    </section>
+
+    <!-- BADGES -->
+    <section class="sg-section" id="badges">
+      <h2>상태 배지 <span class="en">Status Badges</span></h2>
+      <p class="sec-desc">상태는 색으로 즉시 구분됩니다. 텍스트 없이 색만으로도 의미가 전달되도록.</p>
+
+      <div class="sg-sub">진행 상태</div>
+      <div class="sg-demo">
+        <span class="badge b-pending">대기</span>
+        <span class="badge b-progress">진행중</span>
+        <span class="badge b-done">완료</span>
+        <span class="badge b-issue">문제</span>
+        <span class="badge b-urgent">긴급</span>
+        <span class="badge b-critical">치명</span>
+      </div>
+
+      <div class="sg-sub">생산 범위 (Scope)</div>
+      <div class="sg-demo">
+        <span class="badge b-scope-both">벌크+충진</span>
+        <span class="badge b-scope-bulk">벌크</span>
+        <span class="badge b-scope-fill">충진</span>
+      </div>
+
+      <div class="sg-sub">리스크 등급</div>
+      <div class="sg-demo">
+        <span class="badge b-risk-low">낮음</span>
+        <span class="badge b-risk-mid">보통</span>
+        <span class="badge b-risk-high">높음</span>
+        <span class="badge b-risk-crit">심각</span>
+      </div>
+    </section>
+
+    <!-- CARDS -->
+    <section class="sg-section" id="cards">
+      <h2>스탯 카드 <span class="en">Stat Cards</span></h2>
+      <p class="sec-desc">상단 2px 액센트 선으로 카테고리를 구분합니다. 대시보드 KPI에 사용.</p>
+      <div class="stats" style="margin-top:20px">
+        <div class="stat-card total"><div class="label">전체 의뢰</div><div class="value">128</div></div>
+        <div class="stat-card pending"><div class="label">대기</div><div class="value">24</div></div>
+        <div class="stat-card progress"><div class="label">진행중</div><div class="value">57</div></div>
+        <div class="stat-card done"><div class="label">완료</div><div class="value">41</div></div>
+        <div class="stat-card issue clickable"><div class="label">문제 발생</div><div class="value">6</div></div>
+      </div>
+    </section>
+
+    <!-- FORMS -->
+    <section class="sg-section" id="forms">
+      <h2>폼 · 입력 <span class="en">Forms</span></h2>
+      <p class="sec-desc">포커스 시 브랜드 링. 필수 표시·에러 상태 포함.</p>
+      <div class="sg-demo col" style="margin-top:20px">
+        <div class="form-grid">
+          <div class="form-row">
+            <label>제품명 <span class="req">*</span></label>
+            <input type="text" value="에센셜 모이스처 크림">
+          </div>
+          <div class="form-row">
+            <label>생산 범위</label>
+            <select><option>벌크 + 충진</option><option>벌크</option><option>충진</option></select>
+          </div>
+          <div class="form-row">
+            <label>의뢰 부서 <span class="req">*</span></label>
+            <input type="text" class="field-error" value="">
+            <span class="field-error-msg">필수 입력 항목입니다.</span>
+          </div>
+          <div class="form-row">
+            <label>희망 완료일</label>
+            <input type="date" value="2026-07-15">
+            <span class="hint">근무일 기준 최소 10일 이후로 설정하세요.</span>
+          </div>
+          <div class="form-row full">
+            <label>특이사항</label>
+            <textarea placeholder="시생산 시 참고할 내용을 입력하세요"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TABLE -->
+    <section class="sg-section" id="table">
+      <h2>테이블 <span class="en">Data Table</span></h2>
+      <p class="sec-desc">얇은 경계선, soft 헤더, 행 호버. 업무 데이터 목록의 기본형.</p>
+      <div class="toolbar" style="margin:20px 0 12px">
+        <input type="text" placeholder="제품명·의뢰번호 검색">
+        <select><option>전체 상태</option><option>진행중</option><option>완료</option></select>
+        <button class="btn btn-primary btn-sm">+ 신규 의뢰</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>의뢰번호</th><th>제품명</th><th>범위</th><th>상태</th><th>리스크</th><th>희망일</th></tr></thead>
+          <tbody>
+            <tr><td>PP-2406-018</td><td>에센셜 모이스처 크림</td><td><span class="badge b-scope-both">벌크+충진</span></td><td><span class="badge b-progress">진행중</span></td><td><span class="badge b-risk-mid">보통</span></td><td>07.15</td></tr>
+            <tr><td>PP-2406-017</td><td>딥 클렌징 폼</td><td><span class="badge b-scope-bulk">벌크</span></td><td><span class="badge b-done">완료</span></td><td><span class="badge b-risk-low">낮음</span></td><td>06.30</td></tr>
+            <tr><td>PP-2406-016</td><td>UV 프로텍터 SPF50</td><td><span class="badge b-scope-fill">충진</span></td><td><span class="badge b-issue">문제</span></td><td><span class="badge b-risk-high">높음</span></td><td>07.02</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- NAV -->
+    <section class="sg-section" id="nav">
+      <h2>헤더 · 탭 <span class="en">Header & Tabs</span></h2>
+      <p class="sec-desc">상단 3px 브랜드 스트라이프 + 로고/구분선/타이틀. 활성 탭은 레드 밑줄.</p>
+      <div class="sg-demo plain col" style="margin-top:20px; padding:0; gap:0; overflow:hidden; border-radius:var(--radius); border:1px solid var(--border)">
+        <div class="header" style="border-radius:0">
+          <div class="header-top">
+            <div class="header-brand">
+              <img class="header-logo" src="assets/cosmax-logo.png" alt="COSMAX">
+              <div class="header-divider"></div>
+              <div><h1>시생산 통합 관리 시스템</h1><div class="sub">Integrated Pilot-production Management System</div></div>
+            </div>
+            <button class="btn btn-outline btn-sm">홍길동 · 연구원</button>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab active">대시보드</div>
+          <div class="tab">의뢰 목록</div>
+          <div class="tab">진행 현황</div>
+          <div class="tab">통계</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEEDBACK -->
+    <section class="sg-section" id="feedback">
+      <h2>배너 · 스낵바 <span class="en">Banners & Snackbar</span></h2>
+      <p class="sec-desc">배너=지속 안내(좌측 색 스트라이프), 스낵바=일시 피드백(실행취소 포함).</p>
+      <div class="sg-demo col" style="margin-top:20px">
+        <div class="banner"><strong>안내</strong> · 시생산 의뢰는 희망일 기준 최소 10 근무일 전에 등록해야 합니다.</div>
+        <div class="banner ok"><strong>완료</strong> · 의뢰 PP-2406-018 이(가) 정상 등록되었습니다.</div>
+        <div class="banner warn"><strong>주의</strong> · 필수 첨부 문서 2건이 누락되었습니다.</div>
+        <div class="snackbar">
+          <span class="snack-msg">의뢰 1건이 삭제되었습니다.</span>
+          <button class="snack-undo">실행취소</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FLOW -->
+    <section class="sg-section" id="flow">
+      <h2>프로세스 · 디테일 <span class="en">Process & Detail</span></h2>
+
+      <div class="sg-sub">프로세스 플로우</div>
+      <div class="flow">
+        <div class="flow-step"><span class="num">1</span><h4>의뢰 접수</h4><p>연구소가 시생산 의뢰서를 등록합니다.</p></div>
+        <div class="flow-step"><span class="num">2</span><h4>검토 · 배정</h4><p>생산팀이 검토 후 담당자를 배정합니다.</p></div>
+        <div class="flow-step"><span class="num">3</span><h4>시생산 진행</h4><p>벌크·충진 단계를 순차 진행합니다.</p></div>
+        <div class="flow-step"><span class="num">4</span><h4>결과 보고</h4><p>결과를 기록하고 의뢰를 종결합니다.</p></div>
+      </div>
+
+      <div class="sg-sub">상세 정보 (Key–Value)</div>
+      <div class="section" style="border-left-color:var(--accent)">
+        <div class="detail-row"><span class="key">의뢰번호</span><span class="val">PP-2406-018</span></div>
+        <div class="detail-row"><span class="key">제품명</span><span class="val">에센셜 모이스처 크림</span></div>
+        <div class="detail-row"><span class="key">상태</span><span class="val"><span class="badge b-progress">진행중</span></span></div>
+        <div class="detail-row"><span class="key">담당자</span><span class="val">김생산 · 생산기술팀</span></div>
+      </div>
+
+      <div class="sg-sub">사용량 표시</div>
+      <div class="usage" style="max-width:420px">
+        <div class="label"><span>첨부 저장공간</span><span>1.4 GB / 2 GB</span></div>
+        <div class="bar"><div class="bar-fill warn" style="width:70%"></div></div>
+      </div>
+    </section>
+
+    <!-- MODAL -->
+    <section class="sg-section" id="modal">
+      <h2>모달 <span class="en">Modal</span></h2>
+      <p class="sec-desc">흰 표면 · 부드러운 그림자 · sticky 헤더/푸터. 푸터는 soft 배경으로 액션 구분.</p>
+      <div class="sg-demo plain" style="margin-top:20px; justify-content:center; padding:32px">
+        <div class="modal-demo">
+          <div class="modal-header"><h2>시생산 의뢰 등록</h2><button class="close-x">×</button></div>
+          <div class="modal-body">
+            <div class="form-grid">
+              <div class="form-row"><label>제품명 <span class="req">*</span></label><input type="text" value="에센셜 모이스처 크림"></div>
+              <div class="form-row"><label>생산 범위</label><select><option>벌크 + 충진</option></select></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline">취소</button>
+            <button class="btn btn-primary">등록</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NEW COMPONENTS -->
+    <section class="sg-section" id="new">
+      <h2>신규 컴포넌트 (제안) <span class="en">Proposed</span></h2>
+      <p class="sec-desc">전사 확장 시 자주 필요해질 컴포넌트입니다. 기존 토큰만으로 구성해
+        시스템 일관성을 유지합니다.</p>
+
+      <div class="sg-grid c2" style="margin-top:24px">
+        <div class="sg-cell">
+          <span class="sg-cell-label">진행 단계 · <code>.stepper</code></span>
+          <div class="sg-demo">
+            <div class="stepper">
+              <div class="step done"><span class="dot">✓</span><span class="lbl">접수</span></div>
+              <div class="line"></div>
+              <div class="step active"><span class="dot">2</span><span class="lbl">진행</span></div>
+              <div class="line"></div>
+              <div class="step"><span class="dot">3</span><span class="lbl">보고</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sg-cell">
+          <span class="sg-cell-label">세그먼트 컨트롤 · <code>.segmented</code></span>
+          <div class="sg-demo">
+            <div class="segmented">
+              <button class="active">전체</button>
+              <button>진행중</button>
+              <button>완료</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sg-cell">
+          <span class="sg-cell-label">토글 스위치 · <code>.switch</code></span>
+          <div class="sg-demo" style="gap:24px">
+            <label class="switch"><input type="checkbox" checked><span class="track"></span></label>
+            <label class="switch"><input type="checkbox"><span class="track"></span></label>
+            <span class="sg-note" style="margin:0">알림 받기 · 자동 저장</span>
+          </div>
+        </div>
+
+        <div class="sg-cell">
+          <span class="sg-cell-label">아바타 · <code>.avatar</code></span>
+          <div class="sg-demo" style="gap:20px">
+            <span class="avatar">홍</span>
+            <span class="avatar gray">김</span>
+            <span class="avatar-stack"><span class="avatar">홍</span><span class="avatar gray">김</span><span class="avatar gray">박</span></span>
+          </div>
+        </div>
+
+        <div class="sg-cell">
+          <span class="sg-cell-label">툴팁 · <code>.tip</code></span>
+          <div class="sg-demo" style="padding-top:44px">
+            <span class="tip"><button class="btn btn-outline btn-sm">호버 안내</button><span class="tip-bubble">리스크 등급은 BOM 기준 자동 산정됩니다</span></span>
+          </div>
+        </div>
+
+        <div class="sg-cell">
+          <span class="sg-cell-label">빈 상태 · <code>.empty-state</code></span>
+          <div class="sg-demo plain">
+            <div class="empty-state" style="width:100%">
+              <div class="es-icon">＋</div>
+              <div class="es-title">등록된 의뢰가 없습니다</div>
+              <div class="es-desc">첫 시생산 의뢰를 등록해 보세요.</div>
+              <button class="btn btn-primary btn-sm">+ 신규 의뢰</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ---------- 색상 스와치 자동 생성 ---------- */
+const SWATCHES = {
+  neutral: [
+    ['페이지 배경','--bg-page','#f3f0ec'],['표면','--bg-surface','#ffffff'],
+    ['은은한 면','--bg-subtle','#faf8f5'],['경계선','--border','#e7e1d8'],
+    ['강조 경계선','--border-strong','#d6cec1'],['본문','--text-primary','#1a1a1a'],
+    ['보조 텍스트','--text-secondary','#44403c'],['설명','--text-muted','#78716c'],
+    ['플레이스홀더','--text-faint','#a8a29e'],
+  ],
+  brand: [
+    ['브랜드 레드','--accent','#ea1d22'],['hover','--accent-hover','#c4161b'],
+    ['soft','--accent-soft','#fdecec'],['border','--accent-border','#f5cccd'],
+    ['strong','--brand-strong','#b3161a'],
+  ],
+  status: [
+    ['Info','--info','#2563eb'],['Info soft','--info-soft','#eef4ff'],
+    ['Success','--success','#047857'],['Success soft','--success-soft','#ecfdf5'],
+    ['Danger','--danger','#dc2626'],['Danger soft','--danger-soft','#fef2f2'],
+    ['Warning','--warning','#d97706'],['Warning soft','--warning-soft','#fffbeb'],
+  ],
+};
+document.querySelectorAll('[data-swatches]').forEach(host => {
+  SWATCHES[host.dataset.swatches].forEach(([name,vr,hex]) => {
+    const el = document.createElement('button');
+    el.className = 'swatch';
+    el.style.cssText = 'text-align:left;border:1px solid var(--border);font-family:inherit;cursor:pointer;padding:0';
+    const light = ['#ffffff','#faf8f5','#fdecec','#eef4ff','#ecfdf5','#fef2f2','#fffbeb'].includes(hex);
+    el.innerHTML = `<div class="chip" style="background:var(${vr})${light?';box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)':''}"></div>
+      <div class="info"><div class="name">${name}</div><div class="var">var(${vr})</div><div class="hex">${hex}</div></div>`;
+    el.addEventListener('click', () => {
+      navigator.clipboard && navigator.clipboard.writeText(`var(${vr})`);
+      const n = el.querySelector('.var'); const t = n.textContent;
+      n.textContent = '복사됨 ✓'; n.style.color = 'var(--success)';
+      setTimeout(()=>{ n.textContent = t; n.style.color=''; }, 900);
+    });
+    host.appendChild(el);
+  });
+});
+
+/* ---------- 타이포 스펙시먼 자동 생성 ---------- */
+const TYPE = [
+  ['Display','--fs-display','800','시생산 통합 관리'],
+  ['H1 · 페이지 제목','--fs-h1','700','시생산 의뢰 목록'],
+  ['H2 · 헤더 타이틀','--fs-h2','700','시생산 통합 관리 시스템'],
+  ['H3 · 섹션 제목','--fs-h3','600','기본 정보'],
+  ['Body · 본문','--fs-body','400','에센셜 모이스처 크림의 시생산을 의뢰합니다.'],
+  ['Small · 표·폼','--fs-sm','500','벌크 + 충진 / 희망 완료일 07.15'],
+  ['XS · 라벨·메타','--fs-xs','500','의뢰 부서 · 연구소 제품개발팀'],
+  ['2XS · 배지·힌트','--fs-2xs','600','진행중'],
+];
+const tHost = document.getElementById('type-specimens');
+TYPE.forEach(([name,vr,w,sample]) => {
+  const row = document.createElement('div');
+  row.className = 'type-row';
+  const px = getComputedStyle(document.documentElement).getPropertyValue(vr).trim();
+  row.innerHTML = `<div class="specimen" style="font-size:var(${vr});font-weight:${w};${(+px.replace('px',''))>=18?'letter-spacing:var(--tracking-tight)':''}">${sample}</div>
+    <div class="spec-meta">${name}<br>${px} · ${w}</div>`;
+  tHost.appendChild(row);
+});
+
+/* ---------- 간격 스케일 자동 생성 ---------- */
+const SPACE = [['space-1',4],['space-2',8],['space-3',12],['space-4',16],['space-5',20],['space-6',24],['space-8',32],['space-10',40],['space-12',48]];
+const sHost = document.getElementById('space-scale');
+SPACE.forEach(([name,px]) => {
+  const row = document.createElement('div');
+  row.className = 'scale-row';
+  row.innerHTML = `<span class="scale-name">--${name}</span><span class="scale-bar" style="width:${px}px"></span><span class="scale-px">${px}px</span>`;
+  sHost.appendChild(row);
+});
+
+/* ---------- 스크롤 스파이 ---------- */
+const links = [...document.querySelectorAll('.sg-nav a')];
+const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = map.get(e.target.id); if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-10% 0px -80% 0px' });
+document.querySelectorAll('.sg-section').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
