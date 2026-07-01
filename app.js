@@ -587,10 +587,6 @@ function spendItems() {
   return [...fromEvents, ...fromGolf, ...fromExtra];
 }
 
-function spendRows(map) {
-  return [...map.entries()].map(([key, value]) => ({ key, value }));
-}
-
 function renderSpend() {
   const items = spendItems();
   const total = items.reduce((sum, item) => sum + item.amount, 0);
@@ -608,13 +604,9 @@ function renderSpend() {
     </div>
   `;
 
-  const byCategory = new Map();
   // 기본 분류 순서를 먼저, 그 뒤에 "기타" 직접 입력 분류를 이어 붙인다.
   const customCats = [...new Set(items.map((item) => item.category))].filter((cat) => !eventCategories.includes(cat));
-  [...eventCategories, ...customCats].forEach((category) => {
-    const sum = items.filter((item) => item.category === category).reduce((acc, item) => acc + item.amount, 0);
-    if (sum > 0) byCategory.set(category, sum);
-  });
+  const categoryOrder = [...eventCategories, ...customCats];
 
   const byDay = new Map();
   items.forEach((item) => byDay.set(item.day, (byDay.get(item.day) || 0) + item.amount));
@@ -625,14 +617,43 @@ function renderSpend() {
     .sort((a, b) => a.day - b.day || b.amount - a.amount);
 
   const moneyCells = (value) => `<td>${phpText(value)}</td><td>${krwText(value)}</td><td>${usdText(value)}</td>`;
+  const moneyInline = (value) => `<span class="spend-money">${phpText(value)} · ${krwText(value)} · ${usdText(value)}</span>`;
+  const categoryItemRows = categoryOrder.flatMap((category) => {
+    const categoryItems = items.filter((item) => item.category === category && item.amount > 0);
+    if (!categoryItems.length) return [];
+    const groups = new Map();
+    categoryItems.forEach((item) => {
+      const amount = Number(item.amount || 0);
+      const key = `${item.name}\u0000${amount}`;
+      const current = groups.get(key) || { category, name: item.name, unit: amount, count: 0, total: 0 };
+      current.count += 1;
+      current.total += amount;
+      groups.set(key, current);
+    });
+    const rows = [...groups.values()].sort((a, b) => b.total - a.total || String(a.name).localeCompare(String(b.name)));
+    const subtotal = rows.reduce((sum, row) => sum + row.total, 0);
+    const count = rows.reduce((sum, row) => sum + row.count, 0);
+    return [
+      ...rows,
+      { category, name: "소계", unit: 0, count, total: subtotal, subtotal: true },
+    ];
+  });
 
   spendBreakdown.innerHTML = `
     <h3 class="spend-heading">카테고리별</h3>
     <table>
-      <thead><tr><th>분류</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
+      <thead><tr><th>분류</th><th>항목</th><th>1회 금액</th><th>횟수</th><th>총액</th></tr></thead>
       <tbody>
-        ${spendRows(byCategory).map((row) => `<tr><td class="golf-ref__name">${html(row.key)}</td>${moneyCells(row.value)}</tr>`).join("")}
-        <tr class="spend-total-row"><td class="golf-ref__name">합계</td>${moneyCells(total)}</tr>
+        ${categoryItemRows.map((row) => `
+          <tr class="${row.subtotal ? "spend-subtotal-row" : ""}">
+            <td class="golf-ref__name">${html(row.category)}</td>
+            <td class="golf-ref__name">${html(row.name)}</td>
+            <td>${row.subtotal ? "" : moneyInline(row.unit)}</td>
+            <td>${row.count.toLocaleString("ko-KR")}회</td>
+            <td>${moneyInline(row.total)}</td>
+          </tr>
+        `).join("")}
+        <tr class="spend-total-row"><td class="golf-ref__name" colspan="4">합계</td><td>${moneyInline(total)}</td></tr>
       </tbody>
     </table>
 

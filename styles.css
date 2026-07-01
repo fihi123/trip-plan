@@ -637,6 +637,19 @@ body.saved-mode .segments {
   color: var(--ink);
 }
 
+.spend-subtotal-row td {
+  border-top: 1px solid var(--line);
+  background: rgba(49, 95, 143, 0.05);
+  font-weight: 900;
+}
+
+.spend-money {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 /* ⛳ 골프 비용 계산기 */
 .golf-view {
   margin-top: 18px;
