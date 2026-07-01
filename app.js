@@ -315,7 +315,7 @@ function krwText(value) {
 
 function usdText(value) {
   const usd = rates.phpPerUsd > 0 ? value / rates.phpPerUsd : 0;
-  return `$${usd.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  return `$${usd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function html(value) {

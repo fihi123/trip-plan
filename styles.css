@@ -1255,81 +1255,62 @@ body.saved-mode .segments {
   margin-top: 0;
 }
 
-/* 선결제 / 기타 지출 */
-.spend-subtitle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+/* === 지출 탭 최적화 (스크롤 최소화) === */
+.spend-view .panel {
+  padding: var(--space-3);
 }
 
-.spend-subtitle .spend-heading {
-  margin: 18px 0 8px;
+.spend-heading {
+  margin: 12px 0 6px !important;
+  font-size: var(--fs-md);
 }
 
-.extra-spend-list {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 8px;
+/* 테이블 컴팩트 디자인 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  margin-bottom: 12px;
+}
+
+th, td {
+  padding: 6px 8px !important; /* 패딩 감소 */
+  height: auto !important;
+}
+
+.spend-money {
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+}
+
+/* 가로 배치 (넓은 화면) */
+@media (min-width: 900px) {
+  .spend-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
 }
 
 .lodging-card {
-  display: grid;
-  grid-template-columns: 110px 150px 110px 90px 90px minmax(0, 1fr);
-  gap: 10px;
-  align-items: end;
-  margin-bottom: 8px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--teal);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.lodging-card input,
-.lodging-card select {
-  width: 100%;
-  min-width: 0;
-  min-height: 40px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px 10px;
-  color: var(--ink);
-  background: var(--field);
-  outline: none;
-}
-
-.lodging-card input:focus,
-.lodging-card select:focus {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
-}
-
-.lodging-card__result {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  color: var(--muted);
-  font-size: var(--fs-caption);
-  font-weight: 800;
-  overflow-wrap: anywhere;
-}
-
-.lodging-card__result strong {
-  color: var(--teal);
+  padding: 8px 12px !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
 }
 
 .spend-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) 120px 100px 100px 95px minmax(0, 1fr) 34px;
-  gap: 8px;
-  align-items: center;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--blue);
-  border-radius: 8px;
-  background: #fff;
+  padding: 4px 8px !important;
+  gap: 6px !important;
 }
+
+.spend-total-bar {
+  margin-bottom: 12px !important;
+}
+
+.spend-total-bar__item {
+  padding: 8px 12px !important;
+}
+
 
 /* 현지결제(환전 대상) 항목은 환전 금액과 같은 색으로 구분 */
 .spend-item--onsite {
