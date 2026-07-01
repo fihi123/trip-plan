@@ -28,20 +28,20 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --bg-page: #121212;
-    --bg-surface: #1e1e1e;
-    --bg-subtle: #2a2a2a;
-    --text-primary: #e0e0e0;
-    --text-secondary: #b0b0b0;
-    --text-muted: #808080;
-    --border: #333333;
-    --border-strong: #444444;
+    --bg-page: #0f172a;      /* 더 깊은 네이비 배경 */
+    --bg-surface: #1e293b;   /* 카드 배경 (배경과 확실히 구분) */
+    --bg-subtle: #334155;    /* 헤더·보조 영역 */
+    --text-primary: #f8fafc;  /* 거의 흰색에 가까운 텍스트 */
+    --text-secondary: #cbd5e1; /* 밝은 회색 텍스트 */
+    --text-muted: #94a3b8;    /* 흐릿한 텍스트 */
+    --border: #334155;
+    --border-strong: #475569;
     
-    /* 다크모드에서 채도가 높은 컬러들은 조금 더 부드럽게 조정 */
-    --accent: #ff4d4d;
-    --success: #10b981;
-    --info: #3b82f6;
-    --warning: #f59e0b;
+    /* 다크모드 강조 색상 최적화 */
+    --accent: #fb7185;       /* 로즈 핑크 (시인성 높음) */
+    --success: #34d399;      /* 에메랄드 그린 */
+    --info: #60a5fa;         /* 스카이 블루 */
+    --warning: #fbbf24;      /* 앰버 옐로우 */
   }
   
   body {
@@ -51,11 +51,37 @@
 
   .panel {
     background: var(--bg-surface);
-    border-color: var(--border);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  input, select, textarea, .memo-editor {
+    background: var(--bg-subtle) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-strong) !important;
+  }
+
+  input::placeholder {
+    color: var(--text-muted) !important;
   }
 
   .timeline__item {
-    border-left-color: var(--border);
+    border-left-color: var(--border-strong);
+  }
+
+  .hero {
+    background: var(--bg-surface);
+    border-bottom-color: var(--border);
+  }
+
+  /* 테이블 및 리스트 가독성 향상 */
+  th {
+    background: var(--bg-subtle);
+    color: var(--text-primary);
+  }
+
+  tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
   }
 }
 
