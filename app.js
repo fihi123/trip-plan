@@ -1303,10 +1303,10 @@ function loadPdfJs() {
   if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
   if (pdfjsPromise) return pdfjsPromise;
   pdfjsPromise = loadFirstAvailable(
-    ["assets/vendor/pdf.min.js", "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"],
+    ["assets/lib/pdf.min.js", "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"],
     () => Boolean(window.pdfjsLib)
   ).then(() => {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "assets/vendor/pdf.worker.min.js";
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "assets/lib/pdf.worker.min.js";
     return window.pdfjsLib;
   });
   return pdfjsPromise;
@@ -1570,7 +1570,7 @@ function loadXlsx() {
   if (window.XLSX) return Promise.resolve(window.XLSX);
   if (xlsxPromise) return xlsxPromise;
   xlsxPromise = loadFirstAvailable(
-    ["assets/vendor/xlsx.full.min.js", "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"],
+    ["assets/lib/xlsx.full.min.js", "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"],
     () => Boolean(window.XLSX)
   ).then(() => window.XLSX);
   return xlsxPromise;
