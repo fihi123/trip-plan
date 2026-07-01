@@ -1255,60 +1255,92 @@ body.saved-mode .segments {
   margin-top: 0;
 }
 
-/* === 지출 탭 최적화 (스크롤 최소화) === */
+/* === 지출 탭 초슬림 최적화 === */
 .spend-view .panel {
-  padding: var(--space-3);
+  padding: 12px !important;
 }
 
 .spend-heading {
-  margin: 12px 0 6px !important;
-  font-size: var(--fs-md);
+  margin: 8px 0 4px !important;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--warning);
 }
 
-/* 테이블 컴팩트 디자인 */
+/* 초슬림 테이블 */
 table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-sm);
-  margin-bottom: 12px;
+  font-size: 12px;
+  margin-bottom: 8px;
+  border: none !important;
 }
 
-th, td {
-  padding: 6px 8px !important; /* 패딩 감소 */
-  height: auto !important;
+th {
+  padding: 4px 6px !important;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+}
+
+td {
+  padding: 4px 6px !important;
+  border-bottom: 1px solid var(--border) !important;
+  height: 28px !important;
 }
 
 .spend-money {
-  font-size: var(--fs-caption);
-  white-space: nowrap;
+  font-size: 11px;
+  font-family: var(--font-mono);
 }
 
-/* 가로 배치 (넓은 화면) */
-@media (min-width: 900px) {
-  .spend-stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+/* 통계 그리드 레이아웃 */
+.spend-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  align-items: start;
 }
 
+/* 카드 및 박스 슬림화 */
 .lodging-card {
-  padding: 8px 12px !important;
-  gap: 8px !important;
-  margin-bottom: 12px !important;
+  padding: 6px 10px !important;
+  grid-template-columns: 80px 120px 80px 60px 60px 1fr !important;
+  gap: 6px !important;
+  font-size: 12px;
 }
 
 .spend-item {
-  padding: 4px 8px !important;
-  gap: 6px !important;
+  padding: 2px 6px !important;
+  min-height: 32px !important;
+  font-size: 12px;
 }
 
+.spend-item input, .spend-item select, .lodging-card input, .lodging-card select {
+  height: 30px !important;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+}
+
+/* 요약 바 압축 */
 .spend-total-bar {
-  margin-bottom: 12px !important;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px !important;
 }
 
 .spend-total-bar__item {
-  padding: 8px 12px !important;
+  flex: 1;
+  padding: 6px 10px !important;
+  border-left: 3px solid var(--accent) !important;
+}
+
+.spend-total-bar__label {
+  font-size: 11px;
+}
+
+.spend-total-bar__amounts {
+  font-size: 14px;
 }
 
 
