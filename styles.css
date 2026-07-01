@@ -10,16 +10,16 @@
   --gold: #c4922f;
   --blue: #315f8f;
   --field: #f8faf9;
-  --shadow: 0 10px 28px rgba(22, 32, 38, 0.09);
+  --shadow: 0 8px 24px rgba(22, 32, 38, 0.08);
 
   /* 글씨 크기 스케일 — 모든 font-size는 이 토큰만 사용 */
   --fs-caption: 12px;                 /* 라벨·힌트·표 헤더·칩·캡션 */
-  --fs-sm: 13px;                      /* 보조 텍스트·메타·개수 */
-  --fs-base: 14px;                    /* 본문·입력값(기본) */
-  --fs-md: 15px;                      /* 소제목·브랜드·강조 */
-  --fs-lg: 17px;                      /* 카드 제목·장소명 */
-  --fs-xl: 20px;                      /* 인라인 합계 금액 */
-  --fs-2xl: 24px;                     /* h2 섹션 제목 */
+  --fs-sm: 14px;                      /* 보조 텍스트·메타·개수 */
+  --fs-base: 15px;                    /* 본문·입력값(기본) */
+  --fs-md: 16px;                      /* 소제목·브랜드·강조 */
+  --fs-lg: 18px;                      /* 카드 제목·장소명 */
+  --fs-xl: 22px;                      /* 인라인 합계 금액 */
+  --fs-2xl: 26px;                     /* h2 섹션 제목 */
   --fs-h1: clamp(24px, 4vw, 32px);    /* 히어로 제목 */
   --fs-display: clamp(22px, 3vw, 30px); /* 큰 숫자(지표·골프 통계) */
 }
@@ -32,8 +32,12 @@ body {
   margin: 0;
   min-width: 320px;
   font-family: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: var(--fs-base);
+  line-height: 1.45;
   color: var(--ink);
   background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -64,7 +68,7 @@ input {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 14px;
-  padding: 14px 0;
+  padding: 16px 0;
 }
 
 .topbar strong {
@@ -75,7 +79,7 @@ input {
 
 .topbar__title {
   font-size: var(--fs-lg);
-  line-height: 1.2;
+  line-height: 1.25;
   max-width: none;
   font-weight: 800;
   white-space: nowrap;
@@ -197,7 +201,7 @@ h2 {
 
 main {
   width: min(1160px, calc(100% - 32px));
-  margin: 22px auto 56px;
+  margin: 24px auto 56px;
 }
 
 .controls,
@@ -816,12 +820,12 @@ body.saved-mode .segments {
 .golf-ref-table table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-base);
 }
 
 .golf-ref-table th,
 .golf-ref-table td {
-  padding: 8px 10px;
+  padding: 10px 12px;
   text-align: right;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
@@ -890,7 +894,7 @@ body.saved-mode .segments {
 .panel {
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 18px;
+  padding: 20px;
 }
 
 .section-title {
@@ -898,8 +902,8 @@ body.saved-mode .segments {
   justify-content: space-between;
   gap: 16px;
   align-items: start;
-  margin-bottom: 14px;
-  padding-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -909,6 +913,7 @@ body.saved-mode .segments {
   justify-content: flex-end;
   gap: 8px;
   align-items: center;
+  min-width: 0;
 }
 
 #visibleCount {
@@ -926,6 +931,7 @@ body.saved-mode .segments {
   background: var(--teal);
   font-weight: 900;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .timeline {
@@ -955,7 +961,7 @@ body.saved-mode .segments {
   grid-template-columns: minmax(0, 1fr) 104px 34px;
   gap: 12px;
   align-items: start;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--line);
   border-left: 4px solid var(--teal);
   border-radius: 8px;
@@ -965,7 +971,7 @@ body.saved-mode .segments {
 .event-editor {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .event-editor .inline-field {
@@ -1015,7 +1021,7 @@ body.saved-mode .segments {
 .event-editor select,
 .budget-edit {
   width: 100%;
-  min-height: 38px;
+  min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px 10px;
@@ -1165,7 +1171,7 @@ body.saved-mode .segments {
 .spend-item select {
   width: 100%;
   min-width: 0;
-  min-height: 38px;
+  min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px 10px;
@@ -1492,6 +1498,19 @@ body.compact .place-name {
 }
 
 @media (max-width: 900px) {
+  .section-title {
+    flex-wrap: wrap;
+  }
+
+  .section-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .section-actions .small-action {
+    flex: 0 1 auto;
+  }
+
   .controls {
     grid-template-columns: 1fr;
   }
@@ -1521,11 +1540,78 @@ body.compact .place-name {
   .topbar,
   .hero__content,
   main {
-    width: min(100% - 24px, 1160px);
+    width: min(1160px, calc(100% - 24px));
+  }
+
+  body {
+    font-size: var(--fs-sm);
+  }
+
+  .topbar {
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .topbar strong,
+  .topbar__title {
+    white-space: normal;
+  }
+
+  .topbar__title {
+    width: 100%;
+    font-size: var(--fs-md);
+  }
+
+  .trip-duration {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .trip-duration .small-action {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .segments {
+    width: 100%;
+  }
+
+  .segment {
+    flex: 1 1 calc(25% - 8px);
   }
 
   h1 {
     max-width: 340px;
+  }
+
+  h2 {
+    font-size: 24px;
+  }
+
+  main {
+    margin-top: 18px;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .section-title {
+    gap: 12px;
+  }
+
+  .section-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .section-actions .small-action,
+  .section-actions output {
+    width: 100%;
+  }
+
+  #visibleCount {
+    grid-column: 1 / -1;
   }
 
   .summary-grid {
@@ -1544,10 +1630,13 @@ body.compact .place-name {
     order: 3;
     width: 100%;
     margin-left: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .top-tab {
-    flex: 1;
+    min-width: 0;
+    padding: 0 8px;
   }
 
   .saved-grid {
@@ -1559,8 +1648,10 @@ body.compact .place-name {
   }
 
   .event-card {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) 40px;
     align-items: start;
+    gap: 12px;
+    padding: 14px;
   }
 
   .event-main {
@@ -1568,21 +1659,32 @@ body.compact .place-name {
   }
 
   .event-editor {
-    grid-template-columns: 1fr 1fr;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .event-editor .event-name-input {
-    flex: 1 1 100%;
+    grid-column: 1 / -1;
+  }
+
+  .event-editor .event-cat {
+    grid-column: 1 / -1;
+  }
+
+  .event-editor .event-cat-custom {
+    grid-column: 1 / -1;
   }
 
   .event-card .money-field {
-    grid-column: 1;
+    grid-column: 1 / -1;
     text-align: left;
   }
 
   .event-card .delete-inline {
     grid-column: 2;
     grid-row: 2;
+    justify-self: end;
   }
 
   .price {
@@ -1592,6 +1694,51 @@ body.compact .place-name {
   .budget-row,
   .budget-fields {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar,
+  .hero__content,
+  main {
+    width: min(1160px, calc(100% - 20px));
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .section-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .event-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .event-editor .event-time,
+  .event-editor .event-cat,
+  .event-editor .event-cat-custom,
+  .event-editor .inline-field {
+    min-width: 0;
+  }
+
+  .event-card {
+    grid-template-columns: minmax(0, 1fr) 38px;
+  }
+
+  .rates .inline-field,
+  .golf-settings .inline-field {
+    flex: 1 1 100%;
+  }
+
+  .spend-total-bar {
+    padding: 12px;
+  }
+
+  .spend-total-bar__amounts {
+    display: grid;
+    gap: 2px;
   }
 }
 

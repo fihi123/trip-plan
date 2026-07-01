@@ -1,6 +1,7 @@
 // === 환율 (원·달러·페소 모두 표기) ===
-// phpToKrw: 1페소당 원화, phpToUsd: 1페소당 달러. 지출 탭에서 직접 입력하거나 자동 갱신.
-const defaultRates = { phpToKrw: 26.675, phpToUsd: 0.0177, updatedAt: "" };
+// phpToKrw: 1페소당 원화, phpPerUsd: 1달러당 페소, krwPerUsd: 1달러당 원화.
+// 지출 탭에서 직접 입력하거나 자동 갱신.
+const defaultRates = { phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06, updatedAt: "" };
 
 const baseEvents = [
   { day: 1, name: "인천-클락", budget: 0, start: "21:00", end: "01:00" },
@@ -190,9 +191,16 @@ function loadGolf() {
 
 function loadRates() {
   const stored = loadStoredObject(ratesStorageKey);
+  const phpToKrw = Number(stored.phpToKrw) > 0 ? Number(stored.phpToKrw) : defaultRates.phpToKrw;
+  const legacyPhpToUsd = Number(stored.phpToUsd);
+  const phpPerUsd = Number(stored.phpPerUsd) > 0
+    ? Number(stored.phpPerUsd)
+    : (legacyPhpToUsd > 0 ? 1 / legacyPhpToUsd : defaultRates.phpPerUsd);
+  const krwPerUsd = Number(stored.krwPerUsd) > 0 ? Number(stored.krwPerUsd) : phpToKrw * phpPerUsd;
   return {
-    phpToKrw: Number(stored.phpToKrw) > 0 ? Number(stored.phpToKrw) : defaultRates.phpToKrw,
-    phpToUsd: Number(stored.phpToUsd) > 0 ? Number(stored.phpToUsd) : defaultRates.phpToUsd,
+    phpToKrw,
+    phpPerUsd,
+    krwPerUsd,
     updatedAt: typeof stored.updatedAt === "string" ? stored.updatedAt : "",
   };
 }
@@ -243,6 +251,7 @@ const importScheduleButton = document.querySelector("#importScheduleButton");
 const scheduleExcelInput = document.querySelector("#scheduleExcelInput");
 const memoField = document.querySelector("#memoNotes");
 const ratePhpKrw = document.querySelector("#ratePhpKrw");
+const rateKrwUsd = document.querySelector("#rateKrwUsd");
 const ratePhpUsd = document.querySelector("#ratePhpUsd");
 const fetchRatesButton = document.querySelector("#fetchRatesButton");
 const ratesUpdated = document.querySelector("#ratesUpdated");
@@ -282,7 +291,8 @@ function krwText(value) {
 }
 
 function usdText(value) {
-  return `$${(value * rates.phpToUsd).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  const usd = rates.phpPerUsd > 0 ? value / rates.phpPerUsd : 0;
+  return `$${usd.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
 
 function html(value) {
@@ -329,7 +339,7 @@ function spendPaymentOf(item) {
 function toPhp(amount, currency) {
   const value = Number(amount || 0);
   if (currency === "PHP") return value;
-  if (currency === "USD") return rates.phpToUsd > 0 ? value / rates.phpToUsd : 0;
+  if (currency === "USD") return rates.phpPerUsd > 0 ? value * rates.phpPerUsd : 0;
   return rates.phpToKrw > 0 ? value / rates.phpToKrw : 0;
 }
 
@@ -685,7 +695,8 @@ function renderExtraSpends() {
 // === 환율 ===
 function renderRates() {
   if (document.activeElement !== ratePhpKrw) ratePhpKrw.value = String(rates.phpToKrw);
-  if (document.activeElement !== ratePhpUsd) ratePhpUsd.value = String(rates.phpToUsd);
+  if (document.activeElement !== rateKrwUsd) rateKrwUsd.value = String(rates.krwPerUsd);
+  if (document.activeElement !== ratePhpUsd) ratePhpUsd.value = String(rates.phpPerUsd);
   ratesUpdated.textContent = rates.updatedAt ? `갱신: ${rates.updatedAt}` : "직접 입력 또는 자동 갱신";
 }
 
@@ -698,7 +709,8 @@ async function fetchRates() {
     const data = await response.json();
     if (data.result !== "success" || !data.rates || !data.rates.KRW || !data.rates.USD) throw new Error("bad");
     rates.phpToKrw = data.rates.KRW;
-    rates.phpToUsd = data.rates.USD;
+    rates.phpPerUsd = 1 / data.rates.USD;
+    rates.krwPerUsd = data.rates.KRW / data.rates.USD;
     rates.updatedAt = data.time_last_update_utc || new Date().toLocaleString("ko-KR");
     saveRates();
     renderRates();
@@ -1725,7 +1737,7 @@ function exportSpendExcel() {
           "분류": item.category,
           "페소(₱)": Math.round(item.amount),
           "원(₩)": Math.round(item.amount * rates.phpToKrw),
-          "달러($)": Number((item.amount * rates.phpToUsd).toFixed(2)),
+          "달러($)": Number((rates.phpPerUsd > 0 ? item.amount / rates.phpPerUsd : 0).toFixed(2)),
         }));
       const extraSheet = XLSX.utils.json_to_sheet(extraRows, { header: ["항목", "결제 구분", "분류", "통화", "금액"] });
       extraSheet["!cols"] = [{ wch: 34 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 14 }];
@@ -1833,9 +1845,24 @@ document.querySelectorAll(".top-tab").forEach((button) => {
 ratePhpKrw.addEventListener("input", () => {
   const value = Number(ratePhpKrw.value);
   rates.phpToKrw = value > 0 ? value : 0;
+  rates.krwPerUsd = rates.phpToKrw > 0 && rates.phpPerUsd > 0 ? rates.phpToKrw * rates.phpPerUsd : 0;
   rates.updatedAt = "";
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
+  renderRates();
+  renderExtraSpends();
+  renderSpend();
+  renderGolf();
+});
+
+rateKrwUsd.addEventListener("input", () => {
+  const value = Number(rateKrwUsd.value);
+  rates.krwPerUsd = value > 0 ? value : 0;
+  rates.phpToKrw = rates.krwPerUsd > 0 && rates.phpPerUsd > 0 ? rates.krwPerUsd / rates.phpPerUsd : 0;
+  rates.updatedAt = "";
+  saveRates();
+  ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
+  renderRates();
   renderExtraSpends();
   renderSpend();
   renderGolf();
@@ -1843,10 +1870,12 @@ ratePhpKrw.addEventListener("input", () => {
 
 ratePhpUsd.addEventListener("input", () => {
   const value = Number(ratePhpUsd.value);
-  rates.phpToUsd = value > 0 ? value : 0;
+  rates.phpPerUsd = value > 0 ? value : 0;
+  rates.krwPerUsd = rates.phpToKrw > 0 && rates.phpPerUsd > 0 ? rates.phpToKrw * rates.phpPerUsd : 0;
   rates.updatedAt = "";
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
+  renderRates();
   renderExtraSpends();
   renderSpend();
   renderGolf();
