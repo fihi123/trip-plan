@@ -1328,77 +1328,7 @@ body.saved-mode .segments {
   border-left: 4px solid var(--teal) !important;
 }
 
-/* 모바일에서도 강제 한 줄 유지 및 가로 스크롤 제공 */
-@media (max-width: 600px) {
-  .lodging-card, .spend-item {
-    overflow-x: auto;
-    padding-bottom: 8px !important; /* 스크롤바 공간 */
-  }
-}
-
-/* 요약 바 압축 및 통합 */
-.top-summary-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  background: var(--bg-surface);
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  margin-bottom: 12px;
-}
-
-.rates-inputs-compact {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-}
-
-.rates-inputs-compact label {
-  white-space: nowrap;
-  color: var(--text-muted);
-}
-
-.rates-inputs-compact input {
-  width: 50px !important;
-  height: 24px !important;
-  padding: 0 4px !important;
-  font-size: 11px !important;
-  text-align: right;
-  background: #000 !important;
-  border: 1px solid var(--border-strong) !important;
-}
-
-.spend-total-bar {
-  flex: 1;
-  display: flex;
-  gap: 12px;
-  margin-bottom: 0 !important;
-}
-
-.spend-total-bar__item {
-  flex: 1;
-  padding: 0 0 0 10px !important;
-  border-left: 2px solid var(--accent) !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  border-top: none !important;
-  border-right: none !important;
-  border-bottom: none !important;
-}
-
-.spend-total-bar__label {
-  font-size: 10px;
-  color: var(--text-muted);
-  display: block;
-}
-
-.spend-total-bar__amounts {
-  font-size: 13px;
-  white-space: nowrap;
-}
+/* 모바일에서도 강제 한 줄 유지 및 가로 스크롤 제공 (찌꺼기 삭제) */
 
 
 /* 현지결제(환전 대상) 항목은 환전 금액과 같은 색으로 구분 */
@@ -1957,6 +1887,70 @@ body.compact .place-name {
 
   .section-actions {
     grid-template-columns: 1fr;
+  }
+
+  .rates-section {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .rates-section .inline-field,
+  .rates-section .small-action,
+  .rates-section input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .spend-total-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .spend-total-bar__item {
+    min-width: 0;
+    padding: 0 0 0 10px !important;
+  }
+
+  .spend-total-bar__amounts {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .spend-total-bar__amounts strong {
+    display: block;
+  }
+
+  .lodging-card,
+  .spend-item {
+    grid-template-columns: 1fr !important;
+    overflow-x: visible;
+  }
+
+  .lodging-card .inline-field,
+  .lodging-card input,
+  .lodging-card select,
+  .spend-item input,
+  .spend-item select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .lodging-card__result,
+  .spend-item__name,
+  .spend-item__conv,
+  .spend-item .delete-inline {
+    grid-column: 1 / -1;
+  }
+
+  .lodging-card__result {
+    overflow-wrap: anywhere;
+  }
+
+  .spend-item .delete-inline {
+    justify-self: end;
   }
 
   .event-editor {
