@@ -1255,71 +1255,94 @@ body.saved-mode .segments {
   margin-top: 0;
 }
 
-/* === 지출 탭 초슬림 최적화 === */
+/* === 지출 탭 가로 한 줄 정렬 고도화 === */
 .spend-view .panel {
-  padding: 12px !important;
+  padding: 10px !important;
 }
 
-.spend-heading {
-  margin: 8px 0 4px !important;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--warning);
-}
-
-/* 초슬림 테이블 */
-table {
-  font-size: 12px;
-  margin-bottom: 8px;
-  border: none !important;
-}
-
-th {
-  padding: 4px 6px !important;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-bottom: 1px solid var(--border-strong) !important;
-}
-
-td {
-  padding: 4px 6px !important;
-  border-bottom: 1px solid var(--border) !important;
-  height: 28px !important;
-}
-
-.spend-money {
-  font-size: 11px;
-  font-family: var(--font-mono);
-}
-
-/* 통계 그리드 레이아웃 */
-.spend-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-/* 카드 및 박스 슬림화 */
+/* 숙박 카드 한 줄 */
 .lodging-card {
-  padding: 6px 10px !important;
-  grid-template-columns: 80px 120px 80px 60px 60px 1fr !important;
-  gap: 6px !important;
-  font-size: 12px;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  padding: 4px 10px !important;
+  gap: 15px !important;
+  min-height: 40px !important;
+  overflow-x: auto;
+  border-left-width: 6px !important;
+}
+
+.lodging-card .inline-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.lodging-card .inline-field span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.lodging-card input, .lodging-card select {
+  width: auto !important;
+  min-width: 60px;
+  max-width: 110px;
+  height: 28px !important;
+  font-size: 12px !important;
+}
+
+.lodging-card__result {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  font-size: 12px !important;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+/* 추가 지출 리스트 한 줄 */
+.extra-spend-list {
+  display: flex !important;
+  flex-direction: column;
+  gap: 4px !important;
 }
 
 .spend-item {
-  padding: 2px 6px !important;
-  min-height: 32px !important;
-  font-size: 12px;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  padding: 2px 10px !important;
+  gap: 12px !important;
+  min-height: 36px !important;
+  border-left-width: 6px !important;
 }
 
-.spend-item input, .spend-item select, .lodging-card input, .lodging-card select {
-  height: 30px !important;
-  padding: 2px 6px !important;
-  font-size: 12px !important;
+.spend-item__name { flex: 3; min-width: 150px; }
+.spend-item select { flex: 1; min-width: 85px; }
+.spend-item__amount { flex: 1; min-width: 90px; text-align: right; font-weight: 800; }
+.spend-item__conv { flex: 3; text-align: right; font-size: 11px !important; color: var(--text-muted); }
+
+/* 통계 테이블 가로 배치 */
+.spend-stats-grid {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.spend-stats-grid > * {
+  flex: 1 1 400px; /* 테이블들이 가능한 가로로 나란히 서도록 */
+  min-width: 300px;
+}
+
+/* 모바일에서도 강제 한 줄 유지 및 가로 스크롤 제공 */
+@media (max-width: 600px) {
+  .lodging-card, .spend-item {
+    overflow-x: auto;
+    padding-bottom: 8px !important; /* 스크롤바 공간 */
+  }
 }
 
 /* 요약 바 압축 및 통합 */
