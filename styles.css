@@ -370,6 +370,25 @@ body.saved-mode .segments {
   overflow-y: auto;
 }
 
+.saved-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(49, 95, 143, 0.06);
+}
+
+.saved-cloud span {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
 .saved-empty {
   margin: 8px 0;
 }

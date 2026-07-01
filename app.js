@@ -81,10 +81,9 @@ const tripStorageKey = "clark-trip-v1";
 const ratesStorageKey = "clark-rates-v1";
 const extraSpendStorageKey = "clark-extra-spend-v1";
 const seededKey = "clark-seeded-v1";
-// 이 버전에서 1회 기존 데이터 전체 삭제 (사용자 요청). 값을 바꾸면 다시 1회 삭제된다.
-const purgeKey = "clark-purge-v2";
 // 저장된 일정 목록(스냅샷)을 담는 로컬 키 — 클라우드 미설정 시 폴백 저장소
 const savedTripsKey = "clark-saved-trips-v1";
+const cloudGroupKey = "clark-cloud-group-v1";
 
 // === 클라우드 저장소(Firebase Firestore) 설정 ===
 // 아래 firebaseConfig를 채우면 저장본이 클라우드 DB에 저장돼 어느 기기에서나 같은 목록을
@@ -99,19 +98,15 @@ const firebaseConfig = {
   appId: "1:700766072620:web:b91b33d5756cbe1bde8689",
   measurementId: "G-9QWWP9JBSL",
 };
+const FIRESTORE_ROOT = "trip_groups";
 const FIRESTORE_COLLECTION = "saved_trips";
-const cloudOn = () => Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
+let cloudGroup = loadStoredObject(cloudGroupKey);
+const cloudOn = () => Boolean(firebaseConfig.projectId && firebaseConfig.apiKey && cloudGroup.id);
 const firestoreBase = () =>
   `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`;
 
 const backupKeys = [eventStorageKey, memoHtmlStorageKey, golfStorageKey, tripStorageKey, ratesStorageKey, extraSpendStorageKey];
-
-// 최초 1회: 기존에 저장돼 있던 데이터를 모두 비우고 빈 상태로 시작한다.
-if (!localStorage.getItem(purgeKey)) {
-  backupKeys.forEach((key) => localStorage.removeItem(key));
-  localStorage.setItem(seededKey, "done");
-  localStorage.setItem(purgeKey, "done");
-}
+const jsonBackupKeys = backupKeys.filter((key) => key !== memoHtmlStorageKey);
 
 // 시드 완료 표시가 있으면 비어 있어도 기본 일정을 다시 만들지 않는다(완전 초기화 후 빈 상태 유지).
 const seeded = localStorage.getItem(seededKey) === "done";
@@ -268,8 +263,14 @@ const openSavedButton = document.querySelector("#openSavedButton");
 const savedDialog = document.querySelector("#savedDialog");
 const savedList = document.querySelector("#savedList");
 const closeSavedButton = document.querySelector("#closeSavedButton");
+const cloudStatus = document.querySelector("#cloudStatus");
+const setCloudCodeButton = document.querySelector("#setCloudCodeButton");
+const clearCloudCodeButton = document.querySelector("#clearCloudCodeButton");
 const resetButton = document.querySelector("#resetButton");
 const pdfButton = document.querySelector("#pdfButton");
+const exportBackupButton = document.querySelector("#exportBackupButton");
+const importBackupButton = document.querySelector("#importBackupButton");
+const backupInput = document.querySelector("#backupInput");
 
 // === 금액 표기 (페소·원·달러) ===
 function phpText(value) {
@@ -344,6 +345,33 @@ function nextId(prefix, collection) {
   return `${prefix}-${Date.now()}-${collection.length + 1}`;
 }
 
+function loadScript(src, isReady) {
+  return new Promise((resolve, reject) => {
+    if (isReady()) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => isReady() ? resolve() : reject(new Error(src));
+    script.onerror = () => reject(new Error(src));
+    document.head.appendChild(script);
+  });
+}
+
+async function loadFirstAvailable(sources, isReady) {
+  let lastError;
+  for (const src of sources) {
+    try {
+      await loadScript(src, isReady);
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("script");
+}
+
 // === 지출 카테고리 ===
 const eventCategories = ["식비", "숙소", "교통", "마사지", "쇼핑", "밤일정", "골프", "기타"];
 
@@ -371,7 +399,7 @@ function eventCategoryLabel(event) {
 
 // === 일정(타임라인) ===
 function eventKind(event) {
-  const text = event.name.toLowerCase();
+  const text = String(event.name || "").toLowerCase();
   if (text.includes("술") || text.includes("클럽") || text.includes("노래방") || text.includes("레드스트리트")) return "night";
   if (text.includes("식당") || text.includes("순대국") || text.includes("해장국") || text.includes("주몽") || text.includes("서울옥") || text.includes("crabs") || text.includes("아지트") || text.includes("킴스")) return "food";
   return "default";
@@ -928,6 +956,64 @@ function persistLocalSaved(list) {
   localStorage.setItem(savedTripsKey, JSON.stringify(list));
 }
 
+function saveCloudGroup(group) {
+  cloudGroup = group && group.id ? group : {};
+  if (cloudGroup.id) localStorage.setItem(cloudGroupKey, JSON.stringify(cloudGroup));
+  else localStorage.removeItem(cloudGroupKey);
+}
+
+async function hashCloudCode(code) {
+  const bytes = new TextEncoder().encode(code);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 32);
+}
+
+function cloudCollectionPath() {
+  return `/${FIRESTORE_ROOT}/${encodeURIComponent(cloudGroup.id)}/${FIRESTORE_COLLECTION}`;
+}
+
+function storageLabel() {
+  return cloudOn() ? `클라우드(${cloudGroup.label || "공유 코드"})` : "이 브라우저";
+}
+
+function renderCloudStatus() {
+  if (!cloudStatus) return;
+  cloudStatus.textContent = cloudOn()
+    ? `저장 위치: 클라우드 · 코드: ${cloudGroup.label || "설정됨"}`
+    : "저장 위치: 이 브라우저 · 클라우드 공유 코드를 설정하면 다른 기기와 저장본을 공유합니다.";
+  if (clearCloudCodeButton) clearCloudCodeButton.hidden = !cloudOn();
+}
+
+async function setCloudCode() {
+  if (!firebaseConfig.projectId || !firebaseConfig.apiKey) {
+    alert("Firebase 설정이 없어 이 브라우저 로컬 저장으로만 사용합니다.");
+    return;
+  }
+  const current = cloudGroup.label || "";
+  const code = (prompt("동행자와 함께 쓸 클라우드 공유 코드를 입력하세요. 같은 코드를 입력한 기기끼리 저장본을 공유합니다.", current) || "").trim();
+  if (!code) return;
+  if (code.length < 6) {
+    alert("공유 코드는 추측하기 어렵게 6자 이상으로 입력해 주세요.");
+    return;
+  }
+  try {
+    saveCloudGroup({ id: await hashCloudCode(code), label: code.slice(0, 2) + "…" + code.slice(-2) });
+    renderCloudStatus();
+    await renderSavedList();
+  } catch (error) {
+    console.error(error);
+    alert("클라우드 코드를 설정하지 못했습니다. 이 브라우저가 보안 연결(HTTPS)에서 열렸는지 확인해 주세요.");
+  }
+}
+
+function clearCloudCode() {
+  if (!cloudOn()) return;
+  if (!confirm("클라우드 저장본 연결을 해제하고 이 브라우저 로컬 저장본만 볼까요? 클라우드 데이터는 삭제되지 않습니다.")) return;
+  saveCloudGroup({});
+  renderCloudStatus();
+  renderSavedList();
+}
+
 // --- Firestore REST 호출 헬퍼 ---
 async function firestore(path, options = {}) {
   const sep = path.includes("?") ? "&" : "?";
@@ -961,7 +1047,7 @@ const decodeDoc = (doc) => ({
 // --- 데이터 레이어 (클라우드 ↔ 로컬 자동 선택) ---
 async function dbList() {
   if (cloudOn()) {
-    const res = await firestore(`/${FIRESTORE_COLLECTION}?pageSize=300`);
+    const res = await firestore(`${cloudCollectionPath()}?pageSize=300`);
     const docs = (res?.documents || []).map(decodeDoc);
     // 최신 저장본이 위로 오도록 저장시각 내림차순 정렬 (ISO 문자열은 사전식 정렬과 일치)
     return docs.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
@@ -973,7 +1059,7 @@ async function dbFindByName(name) {
 }
 async function dbInsert(name, data, stamp) {
   if (cloudOn()) {
-    const doc = await firestore(`/${FIRESTORE_COLLECTION}`, {
+    const doc = await firestore(cloudCollectionPath(), {
       method: "POST",
       body: JSON.stringify(encodeDoc({ name, savedAt: stamp, data })),
     });
@@ -994,7 +1080,7 @@ async function dbUpdate(id, fields) {
     if ("savedAt" in fields) { masks.push("saved_at"); docFields.saved_at = { stringValue: fields.savedAt }; }
     if ("data" in fields) { masks.push("data"); docFields.data = encodeStringMap(fields.data); }
     const mask = masks.map((m) => `updateMask.fieldPaths=${m}`).join("&");
-    await firestore(`/${FIRESTORE_COLLECTION}/${encodeURIComponent(id)}?${mask}`, {
+    await firestore(`${cloudCollectionPath()}/${encodeURIComponent(id)}?${mask}`, {
       method: "PATCH",
       body: JSON.stringify({ fields: docFields }),
     });
@@ -1007,7 +1093,7 @@ async function dbUpdate(id, fields) {
 }
 async function dbDelete(id) {
   if (cloudOn()) {
-    await firestore(`/${FIRESTORE_COLLECTION}/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await firestore(`${cloudCollectionPath()}/${encodeURIComponent(id)}`, { method: "DELETE" });
     return;
   }
   persistLocalSaved(loadLocalSaved().filter((entry) => entry.id !== id));
@@ -1028,10 +1114,10 @@ async function saveCurrentTrip() {
       await dbInsert(name, data, stamp);
     }
     await renderSavedList();
-    alert(`"${name}"(으)로 저장했습니다.${cloudOn() ? " (클라우드)" : ""}`);
+    alert(`"${name}"(으)로 저장했습니다. (${storageLabel()})`);
   } catch (error) {
     console.error(error);
-    alert("저장에 실패했습니다. 인터넷 연결과 클라우드 설정을 확인해 주세요.");
+    alert(cloudOn() ? "클라우드 저장에 실패했습니다. 인터넷 연결, 공유 코드, Firestore 규칙을 확인해 주세요." : "로컬 저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.");
   }
 }
 
@@ -1045,7 +1131,6 @@ function loadTripSnapshot(id) {
     else localStorage.removeItem(key);
   });
   localStorage.setItem(seededKey, "done");
-  localStorage.setItem(purgeKey, "done");
   location.reload();
 }
 
@@ -1058,7 +1143,7 @@ async function deleteTripSnapshot(id) {
     await renderSavedList();
   } catch (error) {
     console.error(error);
-    alert("삭제에 실패했습니다.");
+    alert(cloudOn() ? "클라우드 저장본 삭제에 실패했습니다. 인터넷 연결과 Firestore 규칙을 확인해 주세요." : "로컬 저장본 삭제에 실패했습니다.");
   }
 }
 
@@ -1076,11 +1161,12 @@ async function renameTripSnapshot(id) {
     await renderSavedList();
   } catch (error) {
     console.error(error);
-    alert("이름 변경에 실패했습니다.");
+    alert(cloudOn() ? "클라우드 저장본 이름 변경에 실패했습니다. 인터넷 연결과 Firestore 규칙을 확인해 주세요." : "로컬 저장본 이름 변경에 실패했습니다.");
   }
 }
 
 async function renderSavedList() {
+  renderCloudStatus();
   savedList.innerHTML = `<p class="meta saved-empty">불러오는 중…</p>`;
   let list;
   try {
@@ -1088,11 +1174,11 @@ async function renderSavedList() {
   } catch (error) {
     console.error(error);
     savedCache = [];
-    savedList.innerHTML = `<p class="meta saved-empty">목록을 불러오지 못했습니다. 인터넷 연결과 클라우드 설정을 확인해 주세요.</p>`;
+    savedList.innerHTML = `<p class="meta saved-empty">목록을 불러오지 못했습니다. ${cloudOn() ? "인터넷 연결, 공유 코드, Firestore 규칙을 확인해 주세요." : "브라우저 저장소를 확인해 주세요."}</p>`;
     return;
   }
   savedCache = list;
-  const where = cloudOn() ? "클라우드" : "이 브라우저";
+  const where = storageLabel();
   if (!list.length) {
     savedList.innerHTML = `<p class="meta saved-empty">저장된 일정이 없습니다. "현재 일정 저장"으로 지금 화면을 저장해 보세요. (저장 위치: ${where})</p>`;
     return;
@@ -1116,6 +1202,7 @@ async function renderSavedList() {
 }
 
 function openSavedDialog() {
+  renderCloudStatus();
   renderSavedList();
   if (typeof savedDialog.showModal === "function") savedDialog.showModal();
   else savedDialog.setAttribute("open", "");
@@ -1126,8 +1213,51 @@ function resetData() {
   if (!confirm("모든 데이터(일정·지출·골프·메모·여행기간·환율)를 완전히 삭제할까요? 되돌릴 수 없습니다.")) return;
   backupKeys.forEach((key) => localStorage.removeItem(key));
   localStorage.setItem(seededKey, "done");
-  localStorage.setItem(purgeKey, "done");
   location.reload();
+}
+
+function downloadJson(filename, payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportBackup() {
+  downloadJson(`clark-trip-backup-${excelDateStamp()}.json`, {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: currentSnapshotData(),
+  });
+}
+
+async function importBackup(file) {
+  try {
+    const payload = JSON.parse(await file.text());
+    const data = payload?.data;
+    if (!data || typeof data !== "object") throw new Error("bad backup");
+    const unknownKeys = Object.keys(data).filter((key) => !backupKeys.includes(key));
+    if (unknownKeys.length) throw new Error("bad keys");
+    for (const key of backupKeys) {
+      if (data[key] != null && typeof data[key] !== "string") throw new Error("bad value");
+      if (data[key] && jsonBackupKeys.includes(key)) JSON.parse(data[key]);
+    }
+    if (!confirm("백업 파일의 데이터로 현재 일정·지출·골프·메모·여행기간·환율을 복원할까요? 현재 편집 내용은 덮어써집니다.")) return;
+    backupKeys.forEach((key) => {
+      if (typeof data[key] === "string") localStorage.setItem(key, data[key]);
+      else localStorage.removeItem(key);
+    });
+    localStorage.setItem(seededKey, "done");
+    location.reload();
+  } catch (error) {
+    console.error(error);
+    alert("백업 파일을 읽지 못했습니다. 이 앱에서 내보낸 JSON 백업 파일인지 확인해 주세요.");
+  }
 }
 
 // === 이벤트 핸들러 ===
@@ -1172,16 +1302,12 @@ let pdfjsPromise = null;
 function loadPdfJs() {
   if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
   if (pdfjsPromise) return pdfjsPromise;
-  pdfjsPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-    script.onload = () => {
-      if (!window.pdfjsLib) return reject(new Error("pdfjs"));
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-      resolve(window.pdfjsLib);
-    };
-    script.onerror = () => reject(new Error("pdfjs"));
-    document.head.appendChild(script);
+  pdfjsPromise = loadFirstAvailable(
+    ["assets/vendor/pdf.min.js", "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"],
+    () => Boolean(window.pdfjsLib)
+  ).then(() => {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "assets/vendor/pdf.worker.min.js";
+    return window.pdfjsLib;
   });
   return pdfjsPromise;
 }
@@ -1443,13 +1569,10 @@ let xlsxPromise = null;
 function loadXlsx() {
   if (window.XLSX) return Promise.resolve(window.XLSX);
   if (xlsxPromise) return xlsxPromise;
-  xlsxPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
-    script.onload = () => window.XLSX ? resolve(window.XLSX) : reject(new Error("xlsx"));
-    script.onerror = () => reject(new Error("xlsx"));
-    document.head.appendChild(script);
-  });
+  xlsxPromise = loadFirstAvailable(
+    ["assets/vendor/xlsx.full.min.js", "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"],
+    () => Boolean(window.XLSX)
+  ).then(() => window.XLSX);
   return xlsxPromise;
 }
 
@@ -1559,9 +1682,15 @@ async function importScheduleExcel(file) {
       alert("가져올 일정이 없습니다. '일정' 시트의 장소/내용 컬럼을 확인해 주세요.");
       return;
     }
-    if (!confirm(`엑셀의 일정 ${imported.length}개로 현재 일정 항목을 교체할까요?`)) return;
+    const maxDay = Math.max(...imported.map((event) => Number(event.day) || 1));
+    const resizeTrip = confirm(
+      `엑셀의 일정 ${imported.length}개로 현재 일정 항목을 교체할까요?\n\n` +
+      `확인: 여행 일수를 엑셀의 최대 일차(${maxDay}일)로 맞춥니다.\n` +
+      `취소: 업로드를 중단합니다.`
+    );
+    if (!resizeTrip) return;
     events = imported;
-    trip.days = Math.max(trip.days, ...events.map((event) => Number(event.day) || 1));
+    trip.days = maxDay;
     trip.nights = Math.max(0, trip.days - 1);
     syncTripDates();
     saveEvents();
@@ -1602,6 +1731,14 @@ function exportSpendExcel() {
       extraSheet["!cols"] = [{ wch: 34 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 14 }];
       const allSheet = XLSX.utils.json_to_sheet(allRows, { header: ["일차", "항목", "분류", "페소(₱)", "원(₩)", "달러($)"] });
       allSheet["!cols"] = [{ wch: 12 }, { wch: 34 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+      const guideSheet = XLSX.utils.aoa_to_sheet([
+        ["지출 업로드 안내"],
+        ["업로드는 '추가지출' 시트만 반영됩니다."],
+        ["'전체지출' 시트는 일정, 골프, 추가 지출을 합산한 참고용입니다."],
+        ["일정 예산은 일정 탭의 엑셀 업로드로 수정하세요."],
+      ]);
+      guideSheet["!cols"] = [{ wch: 60 }];
+      XLSX.utils.book_append_sheet(workbook, guideSheet, "안내");
       XLSX.utils.book_append_sheet(workbook, extraSheet, "추가지출");
       XLSX.utils.book_append_sheet(workbook, allSheet, "전체지출");
       XLSX.writeFile(workbook, `clark-spend-${excelDateStamp()}.xlsx`);
@@ -1613,7 +1750,11 @@ async function importSpendExcel(file) {
   try {
     const XLSX = await loadXlsx();
     const workbook = await readWorkbook(file);
-    const sheet = workbook.Sheets["추가지출"] || workbook.Sheets[workbook.SheetNames[0]];
+    const sheet = workbook.Sheets["추가지출"];
+    if (!sheet) {
+      alert("'추가지출' 시트가 있는 지출 엑셀 파일만 업로드할 수 있습니다. '전체지출' 시트는 참고용입니다.");
+      return;
+    }
     const rows = sheetJson(XLSX, sheet);
     const imported = rows
       .map((row, index) => {
@@ -1856,6 +1997,8 @@ golfRefTable.addEventListener("click", (event) => {
 saveTripButton.addEventListener("click", saveCurrentTrip);
 openSavedButton.addEventListener("click", openSavedDialog);
 closeSavedButton.addEventListener("click", () => savedDialog.close());
+setCloudCodeButton?.addEventListener("click", setCloudCode);
+clearCloudCodeButton?.addEventListener("click", clearCloudCode);
 // 백드롭(다이얼로그 바깥) 클릭 시 닫기
 savedDialog.addEventListener("click", (event) => {
   if (event.target === savedDialog) savedDialog.close();
@@ -1872,6 +2015,13 @@ savedList.addEventListener("click", (event) => {
 });
 resetButton.addEventListener("click", resetData);
 pdfButton.addEventListener("click", () => window.print());
+exportBackupButton?.addEventListener("click", exportBackup);
+importBackupButton?.addEventListener("click", () => backupInput?.click());
+backupInput?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (file) importBackup(file);
+  backupInput.value = "";
+});
 
 // PDF(인쇄) 시: 모든 탭 내용을 펼쳐 보이고, 메모/텍스트 칸이 잘리지 않도록 높이를 늘린다.
 let printTextareaHeights = null;
