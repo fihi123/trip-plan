@@ -55,14 +55,30 @@
   }
 
   /* 모든 박스 형태의 요소들을 다크 모드에 맞게 강제 조정 */
-  .panel, .event-card, .golf-round, .saved-item, .saved-dialog, .hero {
+  .panel, .event-card, .golf-round, .saved-item, .saved-dialog, .hero, 
+  .spend-total-bar__item, .spend-item, .lodging-summary {
     background: var(--bg-surface) !important;
     color: var(--text-primary) !important;
-    border-color: var(--border) !important;
+    border: 1px solid var(--border) !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
   }
 
-  /* 버튼 및 탭 */
+  /* 지출 탭 특정 요소 */
+  .spend-total-bar {
+    background: transparent !important;
+  }
+  
+  .spend-subtotal-row {
+    background: var(--bg-subtle) !important;
+    font-weight: bold;
+  }
+
+  .spend-total-row {
+    background: rgba(244, 63, 94, 0.1) !important; /* accent 컬러 투명도 적용 */
+    font-weight: 800;
+  }
+
+  /* 테이블 및 리스트 가독성 */
   .top-tab, .segment, .small-action, .data-button {
     background: var(--bg-subtle) !important;
     color: var(--text-secondary) !important;
