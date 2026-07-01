@@ -28,20 +28,25 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --bg-page: #0f172a;      /* 더 깊은 네이비 배경 */
-    --bg-surface: #1e293b;   /* 카드 배경 (배경과 확실히 구분) */
-    --bg-subtle: #334155;    /* 헤더·보조 영역 */
-    --text-primary: #f8fafc;  /* 거의 흰색에 가까운 텍스트 */
-    --text-secondary: #cbd5e1; /* 밝은 회색 텍스트 */
-    --text-muted: #94a3b8;    /* 흐릿한 텍스트 */
-    --border: #334155;
-    --border-strong: #475569;
+    --bg-page: #0b0f1a;      /* 더 어두운 배경 */
+    --bg-surface: #161e2e;   /* 카드 배경 */
+    --bg-subtle: #1f2937;    /* 보조 배경 */
+    --text-primary: #e2e8f0;  /* 부드러운 화이트 */
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border: #1e293b;
+    --border-strong: #334155;
     
-    /* 다크모드 강조 색상 최적화 */
-    --accent: #fb7185;       /* 로즈 핑크 (시인성 높음) */
-    --success: #34d399;      /* 에메랄드 그린 */
-    --info: #60a5fa;         /* 스카이 블루 */
-    --warning: #fbbf24;      /* 앰버 옐로우 */
+    --accent: #f43f5e;
+    --success: #10b981;
+    --info: #3b82f6;
+    --warning: #f59e0b;
+    
+    --panel: var(--bg-surface);
+    --field: var(--bg-subtle);
+    --paper: var(--bg-page);
+    --ink: var(--text-primary);
+    --line: var(--border);
   }
   
   body {
@@ -49,39 +54,58 @@
     color: var(--text-primary);
   }
 
-  .panel {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  /* 모든 박스 형태의 요소들을 다크 모드에 맞게 강제 조정 */
+  .panel, .event-card, .golf-round, .saved-item, .saved-dialog, .hero {
+    background: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
   }
 
-  input, select, textarea, .memo-editor {
+  /* 버튼 및 탭 */
+  .top-tab, .segment, .small-action, .data-button {
     background: var(--bg-subtle) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border) !important;
+  }
+
+  .top-tab.is-active, .segment.is-active {
+    background: var(--accent) !important;
+    color: #ffffff !important;
+    border-color: var(--accent) !important;
+  }
+
+  /* 입력창 */
+  input, select, textarea, .memo-editor {
+    background: #000000 !important; /* 입력창은 더 어둡게 */
     color: var(--text-primary) !important;
     border: 1px solid var(--border-strong) !important;
   }
 
-  input::placeholder {
-    color: var(--text-muted) !important;
+  /* 타임라인 구분선 */
+  .day-date {
+    background: transparent !important;
+    color: var(--warning) !important;
+    border-bottom: 2px solid var(--border-strong);
   }
 
-  .timeline__item {
-    border-left-color: var(--border-strong);
+  .timeline__item::before {
+    background: var(--border-strong) !important;
   }
 
-  .hero {
-    background: var(--bg-surface);
-    border-bottom-color: var(--border);
+  /* 테이블 가독성 */
+  table {
+    border-color: var(--border) !important;
   }
-
-  /* 테이블 및 리스트 가독성 향상 */
   th {
-    background: var(--bg-subtle);
-    color: var(--text-primary);
+    background: var(--bg-subtle) !important;
+    color: var(--text-primary) !important;
   }
-
+  td {
+    border-bottom: 1px solid var(--border) !important;
+  }
   tr:nth-child(even) {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.02) !important;
   }
 }
 
