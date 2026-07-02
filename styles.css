@@ -262,6 +262,11 @@ main {
   justify-content: flex-start;
 }
 
+/* 일차 선택 탭을 일정 패널 맨 위에 둘 때 아래 여백 */
+.schedule-panel > .segments {
+  margin-bottom: 16px;
+}
+
 body.saved-mode .controls {
   grid-template-columns: 1fr;
 }
