@@ -112,7 +112,13 @@ const firebaseConfig = {
 };
 const FIRESTORE_ROOT = "trip_groups";
 const FIRESTORE_COLLECTION = "saved_trips";
-let cloudGroup = loadStoredObject(cloudGroupKey);
+// 기본 저장 위치를 클라우드로 한다: 공유 코드를 따로 설정하지 않으면 이 기본 그룹을 쓴다.
+// (모든 기기 공용. "로컬로 전환"을 누르면 { local: true }로 기록해 이 브라우저에만 저장.)
+const DEFAULT_CLOUD_GROUP = { id: "3f8c1a9b7e2d05648fa1c3b9d6e04a72", label: "기본" };
+const cloudGroupStored = loadStoredObject(cloudGroupKey);
+let cloudGroup = cloudGroupStored.id
+  ? cloudGroupStored
+  : (cloudGroupStored.local ? {} : { ...DEFAULT_CLOUD_GROUP });
 const cloudOn = () => Boolean(firebaseConfig.projectId && firebaseConfig.apiKey && cloudGroup.id);
 const firestoreBase = () =>
   `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`;
@@ -1247,9 +1253,16 @@ function persistLocalSaved(list) {
 }
 
 function saveCloudGroup(group) {
-  cloudGroup = group && group.id ? group : {};
-  if (cloudGroup.id) localStorage.setItem(cloudGroupKey, JSON.stringify(cloudGroup));
-  else localStorage.removeItem(cloudGroupKey);
+  if (group && group.id) {
+    cloudGroup = group;
+    localStorage.setItem(cloudGroupKey, JSON.stringify(group)); // 개인 공유 코드
+  } else if (group && group.local) {
+    cloudGroup = {}; // 로컬 전용 모드(명시적으로 기록해 새로고침 후에도 유지)
+    localStorage.setItem(cloudGroupKey, JSON.stringify({ local: true }));
+  } else {
+    cloudGroup = { ...DEFAULT_CLOUD_GROUP }; // 기본: 클라우드
+    localStorage.removeItem(cloudGroupKey);
+  }
 }
 
 async function hashCloudCode(code) {
@@ -1268,8 +1281,11 @@ function storageLabel() {
 
 function renderCloudStatus() {
   if (!cloudStatus) return;
+  const onDefault = cloudGroup.id === DEFAULT_CLOUD_GROUP.id;
   cloudStatus.textContent = cloudOn()
-    ? `저장 위치: 클라우드 · 코드: ${cloudGroup.label || "설정됨"}`
+    ? (onDefault
+        ? "저장 위치: 클라우드(기본 공용) · 나만의 공간을 원하면 공유 코드를 설정하세요."
+        : `저장 위치: 클라우드 · 코드: ${cloudGroup.label || "설정됨"}`)
     : "저장 위치: 이 브라우저 · 클라우드 공유 코드를 설정하면 다른 기기와 저장본을 공유합니다.";
   if (clearCloudCodeButton) clearCloudCodeButton.hidden = !cloudOn();
 }
@@ -1299,7 +1315,7 @@ async function setCloudCode() {
 function clearCloudCode() {
   if (!cloudOn()) return;
   if (!confirm("클라우드 저장본 연결을 해제하고 이 브라우저 로컬 저장본만 볼까요? 클라우드 데이터는 삭제되지 않습니다.")) return;
-  saveCloudGroup({});
+  saveCloudGroup({ local: true });
   renderCloudStatus();
   renderSavedList();
 }
