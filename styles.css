@@ -1187,17 +1187,32 @@ body.saved-mode .segments {
 }
 
 /* 숙박 카드 한 줄: 결제 · 1박금액 · 통화 · 인원 · 박수 · 계산결과 */
+.lodging-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .lodging-card {
   display: grid;
-  grid-template-columns: 110px 150px 110px 90px 90px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.4fr) 104px 116px 92px 72px 72px minmax(0, 1fr) 34px;
   gap: 10px;
   align-items: end;
   padding: 12px;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--teal);
+  border-left: 3px solid var(--line);
   border-radius: 8px;
   background: var(--field);
-  margin-bottom: 8px;
+}
+
+/* 현지결제(환전 대상) 숙소는 청록 강조 */
+.lodging-card--onsite {
+  border-left-color: var(--teal);
+}
+
+.lodging-card__name {
+  font-weight: 700;
 }
 
 .lodging-card input,
@@ -1486,10 +1501,17 @@ body.saved-mode .segments {
 @media (max-width: 760px) {
   .lodging-card {
     grid-template-columns: 1fr 1fr;
+    align-items: center;
   }
 
+  .lodging-card__name,
   .lodging-card__result {
     grid-column: 1 / -1;
+  }
+
+  .lodging-card .delete-lodging {
+    grid-column: 2;
+    justify-self: end;
   }
 
   .spend-item {
@@ -2058,11 +2080,17 @@ body.compact .place-name {
     width: 100%;
   }
 
+  .lodging-card__name,
   .lodging-card__result,
   .spend-item__name,
   .spend-item__conv,
   .spend-item .delete-inline {
     grid-column: 1 / -1;
+  }
+
+  .lodging-card .delete-lodging {
+    grid-column: 1 / -1;
+    justify-self: end;
   }
 
   .lodging-card__result {

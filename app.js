@@ -135,13 +135,13 @@ let trip = loadTrip();
 let golf = loadGolf();
 let rates = loadRates();
 let extraSpends = loadStoredArray(extraSpendStorageKey);
-let lodging = loadLodging();
+let lodgings = loadLodgings();
 
 // 최초 실행(시드 전)에만 기본 일정/골프를 저장해 두고, 이후에는 빈 상태가 기본이 되도록 표시한다.
 if (!seeded) {
   localStorage.setItem(eventStorageKey, JSON.stringify(events));
   localStorage.setItem(golfStorageKey, JSON.stringify(golf));
-  localStorage.setItem(lodgingStorageKey, JSON.stringify(lodging));
+  localStorage.setItem(lodgingStorageKey, JSON.stringify(lodgings));
   localStorage.setItem(seededKey, "done");
 }
 
@@ -173,16 +173,46 @@ function loadTrip() {
   return { nights, days, startDate, endDate };
 }
 
-function loadLodging() {
-  const stored = loadStoredObject(lodgingStorageKey);
+function createLodging() {
+  return {
+    id: `lodging-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name: "",
+    nightly: 0,
+    currency: defaultLodging.currency,
+    people: defaultLodging.people,
+    nights: trip.nights,
+    pay: defaultLodging.pay,
+  };
+}
+
+function sanitizeLodging(stored) {
   const currency = spendCurrencies.includes(stored.currency) ? stored.currency : defaultLodging.currency;
   return {
+    id: stored.id || `lodging-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name: typeof stored.name === "string" ? stored.name : "",
     nightly: Number(stored.nightly) >= 0 ? Number(stored.nightly) : defaultLodging.nightly,
     currency,
     people: Number(stored.people) >= 1 ? Math.min(60, Math.round(Number(stored.people))) : defaultLodging.people,
     nights: Number(stored.nights) >= 0 ? Math.min(60, Math.round(Number(stored.nights))) : trip.nights,
     pay: stored.pay === "onsite" ? "onsite" : defaultLodging.pay,
   };
+}
+
+function loadLodgings() {
+  let raw;
+  try {
+    raw = JSON.parse(localStorage.getItem(lodgingStorageKey));
+  } catch {
+    raw = null;
+  }
+  let list;
+  if (Array.isArray(raw)) list = raw;
+  else if (raw && typeof raw === "object" && (raw.nightly !== undefined || raw.currency !== undefined || raw.nights !== undefined)) {
+    list = [raw]; // 구버전 단일 숙박 객체 → 배열로 마이그레이션
+  } else {
+    list = [{}]; // 기본 숙박 1개
+  }
+  return list.map(sanitizeLodging);
 }
 
 function loadGolf() {
@@ -310,12 +340,8 @@ const addSpendButton = document.querySelector("#addSpendButton");
 const exportSpendButton = document.querySelector("#exportSpendButton");
 const importSpendButton = document.querySelector("#importSpendButton");
 const spendExcelInput = document.querySelector("#spendExcelInput");
-const lodgingNightly = document.querySelector("#lodgingNightly");
-const lodgingPay = document.querySelector("#lodgingPay");
-const lodgingCurrency = document.querySelector("#lodgingCurrency");
-const lodgingPeople = document.querySelector("#lodgingPeople");
-const lodgingNights = document.querySelector("#lodgingNights");
-const lodgingSummary = document.querySelector("#lodgingSummary");
+const lodgingList = document.querySelector("#lodgingList");
+const addLodgingButton = document.querySelector("#addLodgingButton");
 const golfPeople = document.querySelector("#golfPeople");
 const golfRounds = document.querySelector("#golfRounds");
 const golfSummary = document.querySelector("#golfSummary");
@@ -378,8 +404,8 @@ function saveExtraSpends() {
   localStorage.setItem(extraSpendStorageKey, JSON.stringify(extraSpends));
 }
 
-function saveLodging() {
-  localStorage.setItem(lodgingStorageKey, JSON.stringify(lodging));
+function saveLodgings() {
+  localStorage.setItem(lodgingStorageKey, JSON.stringify(lodgings));
 }
 
 function spendCurrencyOf(item) {
@@ -398,7 +424,7 @@ function toPhp(amount, currency) {
   return rates.phpToKrw > 0 ? value / rates.phpToKrw : 0;
 }
 
-function lodgingBreakdown() {
+function lodgingBreakdown(lodging) {
   const nightly = Math.max(0, Number(lodging.nightly) || 0);
   const people = Math.max(1, Math.round(Number(lodging.people) || 1));
   const nights = Math.max(0, Math.round(Number(lodging.nights) || 0));
@@ -639,7 +665,8 @@ function renderDaySegments() {
 function renderTrip() {
   if (document.activeElement !== tripNights) tripNights.value = String(trip.nights);
   if (document.activeElement !== tripDays) tripDays.value = String(trip.days);
-  const lodgingText = lodging.nights !== trip.nights ? ` · 숙박 ${lodging.nights}박` : "";
+  const totalLodgingNights = lodgings.reduce((sum, l) => sum + Math.max(0, Math.round(Number(l.nights) || 0)), 0);
+  const lodgingText = lodgings.length && totalLodgingNights !== trip.nights ? ` · 숙박 ${totalLodgingNights}박` : "";
   tripDates.textContent = trip.startDate
     ? `✈️ ${trip.startDate}(${isoDowKr(trip.startDate)}) 출국 ~ ${trip.endDate}(${isoDowKr(trip.endDate)}) 귀국 · ${trip.nights}박 ${trip.days}일${lodgingText}`
     : "";
@@ -671,32 +698,52 @@ function spendItems() {
     amount: toPhp(item.amount, spendCurrencyOf(item)),
     prepaid: spendPaymentOf(item) === "prepaid", // 선결제만 환전 금액에서 제외
   }));
-  const lodgingCost = lodgingBreakdown();
-  const fromLodging = lodgingCost.perPersonTotalPhp > 0
-    ? [{
-        name: `🏨 숙박 (${lodgingCost.nights}박, ${lodgingCost.people}명)`,
-        day: 0,
-        category: "숙소",
-        amount: lodgingCost.perPersonTotalPhp,
-        prepaid: lodgingCost.pay === "prepaid",
-      }]
-    : [];
+  const fromLodging = lodgings
+    .map((lodging) => ({ lodging, cost: lodgingBreakdown(lodging) }))
+    .filter(({ cost }) => cost.perPersonTotalPhp > 0)
+    .map(({ lodging, cost }) => ({
+      name: `🏨 ${lodging.name ? lodging.name : "숙박"} (${cost.nights}박, ${cost.people}명)`,
+      day: 0,
+      category: "숙소",
+      amount: cost.perPersonTotalPhp,
+      prepaid: cost.pay === "prepaid",
+    }));
   return [...fromEvents, ...fromGolf, ...fromLodging, ...fromExtra];
 }
 
+function lodgingResultText(cost) {
+  if (cost.perPersonTotalPhp <= 0) return "1박 금액을 입력하세요";
+  return `1인 ${phpText(cost.perPersonTotalPhp)} · ${krwText(cost.perPersonTotalPhp)}`;
+}
+
 function renderLodging() {
-  const cost = lodgingBreakdown();
-  if (document.activeElement !== lodgingPay) lodgingPay.value = cost.pay;
-  if (document.activeElement !== lodgingNightly) lodgingNightly.value = cost.nightly ? String(cost.nightly) : "";
-  if (document.activeElement !== lodgingPeople) lodgingPeople.value = String(cost.people);
-  if (document.activeElement !== lodgingNights) lodgingNights.value = String(cost.nights);
-  if (document.activeElement !== lodgingCurrency) lodgingCurrency.value = cost.currency;
-  lodgingSummary.innerHTML = `
-    <span>결제 <strong>${cost.pay === "onsite" ? "현지결제" : "선결제"}</strong></span>
-    <span>1인당 1박 <strong>${originalMoneyText(cost.perPersonNightOriginal, cost.currency)}</strong></span>
-    <span>1인 총액 <strong>${phpText(cost.perPersonTotalPhp)}</strong> · ${krwText(cost.perPersonTotalPhp)} · ${usdText(cost.perPersonTotalPhp)}</span>
-    <span>객실 총액 ${originalMoneyText(cost.groupTotalOriginal, cost.currency)} (${phpText(cost.groupTotalPhp)})</span>
-  `;
+  if (!lodgingList) return;
+  const payLabels = { prepaid: "선결제", onsite: "현지결제(환전)" };
+  const payOptions = (selected) => Object.entries(payLabels).map(([code, label]) =>
+    `<option value="${code}" ${code === selected ? "selected" : ""}>${label}</option>`).join("");
+  const currencyLabels = { KRW: "₩ 원", PHP: "₱ 페소", USD: "$ 달러" };
+  const currencyOptions = (selected) => spendCurrencies.map((code) =>
+    `<option value="${code}" ${code === selected ? "selected" : ""}>${currencyLabels[code]}</option>`).join("");
+
+  if (!lodgings.length) {
+    lodgingList.innerHTML = `<p class="meta">"추가"로 숙소를 넣으세요. 여행 중 숙소를 바꾸면 여러 개 등록할 수 있습니다.</p>`;
+    return;
+  }
+
+  lodgingList.innerHTML = lodgings.map((lodging) => {
+    const cost = lodgingBreakdown(lodging);
+    return `
+      <div class="lodging-card${cost.pay === "onsite" ? " lodging-card--onsite" : ""}" data-lodging-id="${html(lodging.id)}">
+        <input class="lodging-card__name" data-lodging-field="name" aria-label="숙소명" placeholder="숙소명 (예: 마르퀴 호텔)" value="${html(lodging.name || "")}" />
+        <label class="inline-field"><span>결제</span><select data-lodging-field="pay" aria-label="결제 구분">${payOptions(cost.pay)}</select></label>
+        <label class="inline-field"><span>1박 금액</span><input data-lodging-field="nightly" inputmode="numeric" aria-label="1박 금액" value="${cost.nightly ? String(cost.nightly) : ""}" /></label>
+        <label class="inline-field"><span>통화</span><select data-lodging-field="currency" aria-label="통화">${currencyOptions(cost.currency)}</select></label>
+        <label class="inline-field"><span>인원</span><input data-lodging-field="people" inputmode="numeric" aria-label="인원" value="${String(cost.people)}" /></label>
+        <label class="inline-field"><span>박수</span><input data-lodging-field="nights" inputmode="numeric" aria-label="박수" value="${String(cost.nights)}" /></label>
+        <output class="lodging-card__result">${lodgingResultText(cost)}</output>
+        <button class="delete-inline delete-lodging" type="button" aria-label="숙소 삭제">×</button>
+      </div>`;
+  }).join("");
 }
 
 function renderSpend() {
@@ -1519,9 +1566,11 @@ function syncTripDates() {
 }
 
 function syncLodgingNightsWithTrip(previousTripNights) {
-  if (Number(lodging.nights) !== Number(previousTripNights)) return;
-  lodging.nights = trip.nights;
-  saveLodging();
+  // 숙소가 하나뿐이고 그 박수가 기존 여행 박수와 같을 때만 자동으로 따라가게 한다.
+  if (lodgings.length !== 1) return;
+  if (Number(lodgings[0].nights) !== Number(previousTripNights)) return;
+  lodgings[0].nights = trip.nights;
+  saveLodgings();
 }
 
 tripNights.addEventListener("input", () => {
@@ -2164,25 +2213,71 @@ ratePhpUsd.addEventListener("input", () => {
 
 fetchRatesButton.addEventListener("click", fetchRates);
 
-function applyLodgingField(target) {
-  const field = target.id;
-  if (field === "lodgingNightly") lodging.nightly = Math.max(0, Number(target.value) || 0);
-  if (field === "lodgingPeople") lodging.people = Math.max(1, Math.min(60, Math.round(Number(target.value) || 1)));
-  if (field === "lodgingNights") lodging.nights = Math.max(0, Math.min(60, Math.round(Number(target.value) || 0)));
-  if (field === "lodgingCurrency") lodging.currency = spendCurrencies.includes(target.value) ? target.value : defaultLodging.currency;
-  if (field === "lodgingPay") lodging.pay = target.value === "onsite" ? "onsite" : "prepaid";
-  saveLodging();
-  renderTrip();
-  renderLodging();
-  renderSpend();
+function findLodging(target) {
+  const card = target.closest(".lodging-card");
+  return card ? lodgings.find((item) => item.id === card.dataset.lodgingId) : null;
 }
 
-[lodgingNightly, lodgingPeople, lodgingNights].forEach((input) => {
-  input.addEventListener("input", (event) => applyLodgingField(event.target));
-});
+function applyLodgingField(target, item) {
+  const field = target.dataset.lodgingField;
+  if (field === "name") item.name = target.value;
+  else if (field === "nightly") item.nightly = Math.max(0, Number(target.value) || 0);
+  else if (field === "people") item.people = Math.max(1, Math.min(60, Math.round(Number(target.value) || 1)));
+  else if (field === "nights") item.nights = Math.max(0, Math.min(60, Math.round(Number(target.value) || 0)));
+  else if (field === "currency") item.currency = spendCurrencies.includes(target.value) ? target.value : defaultLodging.currency;
+  else if (field === "pay") item.pay = target.value === "onsite" ? "onsite" : "prepaid";
+  saveLodgings();
+}
 
-lodgingCurrency.addEventListener("change", (event) => applyLodgingField(event.target));
-lodgingPay.addEventListener("change", (event) => applyLodgingField(event.target));
+if (addLodgingButton) {
+  addLodgingButton.addEventListener("click", () => {
+    const lodging = createLodging();
+    lodgings.push(lodging);
+    saveLodgings();
+    renderLodging();
+    renderSpend();
+    requestAnimationFrame(() => {
+      document.querySelector(`[data-lodging-id="${CSS.escape(lodging.id)}"] .lodging-card__name`)?.focus();
+    });
+  });
+}
+
+if (lodgingList) {
+  // name·숫자 입력: 재렌더 없이 값·결과만 갱신(포커스 유지)
+  lodgingList.addEventListener("input", (event) => {
+    const field = event.target.dataset.lodgingField;
+    if (field !== "name" && field !== "nightly" && field !== "people" && field !== "nights") return;
+    const item = findLodging(event.target);
+    if (!item) return;
+    applyLodgingField(event.target, item);
+    const result = event.target.closest(".lodging-card")?.querySelector(".lodging-card__result");
+    if (result) result.textContent = lodgingResultText(lodgingBreakdown(item));
+    renderSpend();
+  });
+
+  // 결제·통화 select: 값 반영 후 전체 재렌더(색상 등 반영)
+  lodgingList.addEventListener("change", (event) => {
+    const field = event.target.dataset.lodgingField;
+    if (field !== "pay" && field !== "currency") return;
+    const item = findLodging(event.target);
+    if (!item) return;
+    applyLodgingField(event.target, item);
+    renderLodging();
+    renderSpend();
+  });
+
+  lodgingList.addEventListener("click", (event) => {
+    const button = event.target.closest(".delete-lodging");
+    if (!button) return;
+    const item = findLodging(button);
+    if (!item) return;
+    if (!confirm(`${item.name || "이 숙소"}을(를) 삭제할까요?`)) return;
+    lodgings = lodgings.filter((entry) => entry.id !== item.id);
+    saveLodgings();
+    renderLodging();
+    renderSpend();
+  });
+}
 
 function findExtraSpend(target) {
   const card = target.closest(".spend-item");

@@ -79,38 +79,29 @@
           <div class="spend-total-bar" id="spendSummary"></div>
 
           <div class="spend-subtitle">
+            <h3 class="spend-heading">환전 이득 계산</h3>
+          </div>
+          <div class="rates-section changer-rates" aria-label="사설환전소 환율">
+            <label class="inline-field">
+              <span>사설 ₱→₩ (원/페소)</span>
+              <input id="changerPhpKrw" inputmode="decimal" aria-label="사설 페소당 원화" />
+            </label>
+            <label class="inline-field">
+              <span>사설 $→₩ (원/달러)</span>
+              <input id="changerKrwUsd" inputmode="decimal" aria-label="사설 달러당 원화" />
+            </label>
+            <label class="inline-field">
+              <span>사설 $→₱ (페소/달러)</span>
+              <input id="changerPhpUsd" inputmode="decimal" aria-label="사설 달러당 페소" placeholder="예: 57.5" />
+            </label>
+          </div>
+          <div id="exchangeAdvice"></div>
+
+          <div class="spend-subtitle">
             <h3 class="spend-heading">숙박</h3>
+            <button class="small-action" id="addLodgingButton" type="button">추가</button>
           </div>
-          <div class="lodging-card" id="lodgingCard">
-            <label class="inline-field">
-              <span>결제</span>
-              <select id="lodgingPay" aria-label="숙박 결제 구분">
-                <option value="prepaid">선결제</option>
-                <option value="onsite">현지결제</option>
-              </select>
-            </label>
-            <label class="inline-field">
-              <span>1박 금액</span>
-              <input id="lodgingNightly" inputmode="numeric" aria-label="숙박 1박 금액" />
-            </label>
-            <label class="inline-field">
-              <span>통화</span>
-              <select id="lodgingCurrency" aria-label="숙박 통화">
-                <option value="KRW">₩ 원</option>
-                <option value="PHP">₱ 페소</option>
-                <option value="USD">$ 달러</option>
-              </select>
-            </label>
-            <label class="inline-field">
-              <span>인원</span>
-              <input id="lodgingPeople" inputmode="numeric" aria-label="숙박 인원" />
-            </label>
-            <label class="inline-field">
-              <span>박수</span>
-              <input id="lodgingNights" inputmode="numeric" aria-label="숙박 박수" />
-            </label>
-            <output class="lodging-card__result" id="lodgingSummary"></output>
-          </div>
+          <div class="lodging-list" id="lodgingList"></div>
 
           <div class="spend-subtitle">
             <h3 class="spend-heading">선결제 / 현지결제 추가 지출</h3>
@@ -122,7 +113,7 @@
           <p class="memo-hint">총액: 일정+숙박(1인)+골프(1인)+기타지출 합계. 환전금액: 총액에서 선결제 제외.</p>
 
           <details class="fx-panel">
-            <summary class="fx-panel__summary">환율 &amp; 환전 이득 계산 <span class="fx-panel__sub">적용 환율 · 은행 우대 · 사설환전소 · 경로 비교</span></summary>
+            <summary class="fx-panel__summary">환율 설정 <span class="fx-panel__sub">적용 환율(자동 갱신) · 은행 현찰 우대</span></summary>
             <div class="fx-panel__body">
               <div class="spend-subtitle">
                 <h3 class="spend-heading">적용 환율 (자동 갱신 기준)</h3>
@@ -166,29 +157,6 @@
                 </div>
                 <p class="bank-fx__hint">현찰 살 때 = 시세(매매기준율) × (1 + 스프레드% × (1 − 우대%)). <strong>환율 자동 갱신</strong>을 누르면 원/달러·원/페소에 반영됩니다. (페소/달러는 시세 유지)</p>
               </details>
-
-              <div class="spend-subtitle">
-                <h3 class="spend-heading">사설환전소 환율</h3>
-              </div>
-              <div class="rates-section changer-rates" aria-label="사설환전소 환율">
-                <label class="inline-field">
-                  <span>사설 ₱→₩ (원/페소)</span>
-                  <input id="changerPhpKrw" inputmode="decimal" aria-label="사설 페소당 원화" />
-                </label>
-                <label class="inline-field">
-                  <span>사설 $→₩ (원/달러)</span>
-                  <input id="changerKrwUsd" inputmode="decimal" aria-label="사설 달러당 원화" />
-                </label>
-                <label class="inline-field">
-                  <span>사설 $→₱ (페소/달러)</span>
-                  <input id="changerPhpUsd" inputmode="decimal" aria-label="사설 달러당 페소" placeholder="예: 57.5" />
-                </label>
-              </div>
-
-              <div class="spend-subtitle">
-                <h3 class="spend-heading">환전 이득 계산</h3>
-              </div>
-              <div id="exchangeAdvice"></div>
             </div>
           </details>
         </section>
