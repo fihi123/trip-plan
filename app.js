@@ -1969,7 +1969,6 @@ document.querySelectorAll(".top-tab").forEach((button) => {
 ratePhpKrw.addEventListener("input", () => {
   const value = Number(ratePhpKrw.value);
   rates.phpToKrw = value > 0 ? value : 0;
-  rates.krwPerUsd = rates.phpToKrw > 0 && rates.phpPerUsd > 0 ? rates.phpToKrw * rates.phpPerUsd : 0;
   rates.updatedAt = "";
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
@@ -1983,7 +1982,6 @@ ratePhpKrw.addEventListener("input", () => {
 rateKrwUsd.addEventListener("input", () => {
   const value = Number(rateKrwUsd.value);
   rates.krwPerUsd = value > 0 ? value : 0;
-  rates.phpToKrw = rates.krwPerUsd > 0 && rates.phpPerUsd > 0 ? rates.krwPerUsd / rates.phpPerUsd : 0;
   rates.updatedAt = "";
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
@@ -1997,7 +1995,6 @@ rateKrwUsd.addEventListener("input", () => {
 ratePhpUsd.addEventListener("input", () => {
   const value = Number(ratePhpUsd.value);
   rates.phpPerUsd = value > 0 ? value : 0;
-  rates.krwPerUsd = rates.phpToKrw > 0 && rates.phpPerUsd > 0 ? rates.phpToKrw * rates.phpPerUsd : 0;
   rates.updatedAt = "";
   saveRates();
   ratesUpdated.textContent = "직접 입력 또는 자동 갱신";
