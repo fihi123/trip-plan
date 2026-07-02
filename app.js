@@ -116,7 +116,7 @@ const firebaseConfig = {
 // 거쳐 Gemini로 텍스트를 구조화한다. 아래에 배포된 함수 URL을 넣으면 AI 인식이 켜지고,
 // 비워 두면 자동으로 기존 정규식 파서만 사용한다(오프라인 폴백). 설정은 여정AI설정.md 참고.
 // 예: "https://asia-northeast3-trip-plan-4b079.cloudfunctions.net/parseItinerary"
-const AI_PARSE_ENDPOINT = "";
+const AI_PARSE_ENDPOINT = "https://parseitinerary-qzrzipqxza-du.a.run.app";
 
 const FIRESTORE_ROOT = "trip_groups";
 const FIRESTORE_COLLECTION = "saved_trips";
