@@ -991,6 +991,11 @@ body.saved-mode .segments {
   gap: 14px;
 }
 
+/* 전체 일차 펼침(PDF 전용)은 화면에서는 숨긴다 */
+.print-itinerary {
+  display: none;
+}
+
 .day-group {
   display: grid;
   gap: 10px;
@@ -2169,6 +2174,26 @@ body.compact .place-name {
   .golf-round,
   .golf-stat {
     break-inside: avoid;
+  }
+
+  /* 일정: 편집용 단일 일차는 숨기고 전체 일차 펼침을 보인다 */
+  #timeline {
+    display: none !important;
+  }
+
+  .print-itinerary {
+    display: grid !important;
+    gap: 14px;
+  }
+
+  .print-day {
+    break-inside: avoid;
+    display: grid;
+    gap: 10px;
+  }
+
+  .print-event__title {
+    font-weight: 600;
   }
 
   /* 편집/탐색용 UI는 PDF에서 숨긴다 */

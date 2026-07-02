@@ -659,6 +659,54 @@ function renderTimeline() {
   visibleCount.value = `${items.length + golfForDay.length}개 항목`;
 }
 
+// PDF(인쇄)용: 선택한 하루가 아닌 전체 일차의 일정을 읽기 전용으로 펼쳐 담는다.
+function renderPrintItinerary() {
+  const container = document.querySelector("#printItinerary");
+  if (!container) return;
+  let out = "";
+  for (let day = 1; day <= trip.days; day += 1) {
+    const items = sortDayEvents(events.filter((event) => Number(event.day) === day));
+    const golfForDay = golf.rounds.filter((round) => Number(round.tripDay) === day);
+    const headDate = trip.startDate
+      ? (() => {
+          const iso = isoAddDays(trip.startDate, day - 1);
+          return ` · ${isoToMD(iso)} (${isoDowKr(iso)})`;
+        })()
+      : "";
+
+    let rows = items.map((event) => {
+      const time = [event.start, event.end].filter(Boolean).join("~");
+      return `
+      <article class="event-card" data-kind="${eventKind(event)}">
+        <div class="event-main">
+          <div class="print-event__title">${html(event.name || "(제목 없음)")}${time ? ` <small>${html(time)}</small>` : ""}</div>
+          <div class="meta">${html(eventCategory(event))}</div>
+        </div>
+        ${event.budget ? `<div class="money-field">${phpText(Number(event.budget))}</div>` : ""}
+      </article>`;
+    }).join("");
+
+    rows += golfForDay.map((round) => {
+      const breakdown = golfRoundBreakdown(round, golf.people);
+      return `
+      <article class="event-card golf-event" data-kind="golf">
+        <div class="event-main">
+          <div class="print-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(round.day)}${round.time ? ` · ${html(round.time)}` : ""}</small></div>
+          <div class="meta">골프 · 1인 ${krwText(breakdown.total)} · ${usdText(breakdown.total)}</div>
+        </div>
+        <div class="money-field golf-event__cost">${phpText(breakdown.total)}</div>
+      </article>`;
+    }).join("");
+
+    if (!items.length && !golfForDay.length) {
+      rows = `<p class="meta">일정 없음</p>`;
+    }
+
+    out += `<div class="print-day"><div class="day-date">${day}일차${headDate}</div>${rows}</div>`;
+  }
+  container.innerHTML = out;
+}
+
 function renderDaySegments() {
   if (Number(state.day) > trip.days) state.day = String(trip.days);
   let buttons = "";
@@ -2474,6 +2522,7 @@ backupInput?.addEventListener("change", (event) => {
 let printTextareaHeights = null;
 window.addEventListener("beforeprint", () => {
   document.querySelectorAll(".guide-view, .spend-view, .golf-view, .notes-view").forEach((element) => element.classList.remove("is-hidden"));
+  renderPrintItinerary();
   const textareas = [...document.querySelectorAll("textarea")];
   printTextareaHeights = textareas.map((field) => field.style.height);
   textareas.forEach((field) => {
