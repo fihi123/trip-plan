@@ -1880,13 +1880,33 @@ copyDayButton?.addEventListener("click", () => {
 pasteDayButton?.addEventListener("click", () => {
   if (!dayClipboard || !dayClipboard.items.length) return;
   const day = Number(state.day) || 1;
-  dayClipboard.items.forEach((source, index) => {
-    const id = `event-${Date.now()}-${events.length + 1 + index}`;
+  // 이미 이 일차에 있는 항목(이름+시작+예산이 같은 것)은 다시 붙이지 않아 지출 중복을 막는다.
+  const dedupeKey = (item) => `${item.name || ""} ${item.start || ""} ${Number(item.budget || 0)}`;
+  const existing = new Set(
+    events.filter((entry) => String(entry.day) === String(day)).map(dedupeKey)
+  );
+  const stamp = Date.now();
+  let added = 0;
+  let skipped = 0;
+  dayClipboard.items.forEach((source) => {
+    const key = dedupeKey(source);
+    if (existing.has(key)) {
+      skipped += 1;
+      return;
+    }
+    existing.add(key); // 클립보드 안에 동일 항목이 여러 개여도 한 번만 추가
+    const id = `event-${stamp}-${events.length + 1}`;
     events.push({ ...source, id, day });
+    added += 1;
   });
   saveEvents();
   renderTimeline();
   renderSpend();
+  if (added === 0) {
+    alert(`${day}일차에 이미 같은 일정이 있어 새로 추가된 항목이 없습니다.`);
+  } else if (skipped > 0) {
+    alert(`${added}개를 추가했습니다. 중복 ${skipped}개는 건너뛰었습니다.`);
+  }
 });
 
 // === 엑셀 다운로드 / 업로드 ===
