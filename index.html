@@ -23,11 +23,22 @@
           <span class="trip-dates" id="tripDates"></span>
         </div>
         <div class="segments guide-view" id="daySegments" role="tablist" aria-label="일차 선택"></div>
-        <div class="topbar__tabs" role="tablist" aria-label="페이지 선택">
-          <button class="top-tab is-active" type="button" data-view="guide">일정</button>
-          <button class="top-tab" type="button" data-view="spend">지출</button>
-          <button class="top-tab" type="button" data-view="golf">골프</button>
-          <button class="top-tab" type="button" data-view="notes">메모</button>
+        <div class="topbar__nav">
+          <div class="topbar__tabs" role="tablist" aria-label="페이지 선택">
+            <button class="top-tab is-active" type="button" data-view="guide">일정</button>
+            <button class="top-tab" type="button" data-view="spend">지출</button>
+            <button class="top-tab" type="button" data-view="golf">골프</button>
+            <button class="top-tab" type="button" data-view="notes">메모</button>
+          </div>
+          <div class="data-tools" aria-label="데이터 관리">
+            <button class="data-button is-primary" id="pdfButton" type="button">PDF로 저장 / 공유</button>
+            <button class="data-button" id="exportBackupButton" type="button">전체 백업</button>
+            <button class="data-button" id="importBackupButton" type="button">백업 복원</button>
+            <input id="backupInput" type="file" accept="application/json,.json" hidden />
+            <button class="data-button" id="saveTripButton" type="button">현재 일정 저장</button>
+            <button class="data-button" id="openSavedButton" type="button">저장된 일정 불러오기</button>
+            <button class="data-button is-danger" id="resetButton" type="button">완전 초기화 (전체 삭제)</button>
+          </div>
         </div>
       </nav>
     </header>
@@ -206,16 +217,6 @@
           <p class="memo-hint">텍스트를 자유롭게 작성하고, 이미지는 복사해서 <strong>붙여넣기(Ctrl+V)</strong>하면 본문에 바로 삽입됩니다.</p>
           <div class="memo-editor" id="memoNotes" contenteditable="true" role="textbox" aria-multiline="true" aria-label="메모" data-placeholder="출발 전 준비물, 특이사항 등 기억해 둘 내용을 자유롭게 적고, 이미지는 붙여넣으세요."></div>
         </section>
-      </section>
-
-      <section class="data-tools" aria-label="데이터 관리">
-        <button class="data-button is-primary" id="pdfButton" type="button">PDF로 저장 / 공유</button>
-        <button class="data-button" id="exportBackupButton" type="button">전체 백업</button>
-        <button class="data-button" id="importBackupButton" type="button">백업 복원</button>
-        <input id="backupInput" type="file" accept="application/json,.json" hidden />
-        <button class="data-button" id="saveTripButton" type="button">현재 일정 저장</button>
-        <button class="data-button" id="openSavedButton" type="button">저장된 일정 불러오기</button>
-        <button class="data-button is-danger" id="resetButton" type="button">완전 초기화 (전체 삭제)</button>
       </section>
 
       <dialog class="saved-dialog" id="savedDialog" aria-label="저장된 일정">

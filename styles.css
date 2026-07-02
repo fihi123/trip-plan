@@ -130,10 +130,20 @@ input {
   gap: 8px;
 }
 
+/* 상단 탭 + 데이터 버튼을 한 줄에 (탭 왼쪽 · 데이터 버튼 오른쪽) */
+.topbar__nav {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
 .topbar__tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-left: auto;
 }
 
 .top-tab,
@@ -309,20 +319,20 @@ body.saved-mode .segments {
 .data-tools {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin: 28px 0 0;
+  gap: 8px;
+  margin: 0;
 }
 
 .data-button {
-  min-height: 40px;
+  min-height: 36px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0 14px;
+  padding: 0 12px;
   color: var(--ink);
   background: var(--panel);
+  font-size: var(--fs-sm);
   font-weight: 800;
   cursor: pointer;
-  box-shadow: var(--shadow);
 }
 
 .data-button:hover {
@@ -1873,6 +1883,14 @@ body.compact .place-name {
     margin-left: 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .topbar__nav {
+    gap: 8px;
+  }
+
+  .data-tools {
+    width: 100%;
   }
 
   .top-tab {
