@@ -618,25 +618,6 @@ body.saved-mode .segments {
   border-bottom: 1px solid var(--line);
 }
 
-/* 환율 + 예상지출/환전금액을 한 줄에 나란히 */
-.rates-summary-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.rates-summary-row .rates-section {
-  flex: 1 1 380px;
-  margin-bottom: 0;
-}
-
-.rates-summary-row .spend-total-bar {
-  flex: 1 1 320px;
-  margin-bottom: 0;
-}
-
 /* 지출 탭 환율 입력 줄 (데스크톱 기본 레이아웃) */
 .rates-section {
   display: flex;
@@ -1306,6 +1287,49 @@ body.saved-mode .segments {
   margin-top: 0;
 }
 
+/* 환율 & 환전 이득 계산 — 접이식 하단 패널 */
+.fx-panel {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.fx-panel > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 16px 2px 4px;
+  color: var(--ink);
+  font-size: var(--fs-md);
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
+}
+
+.fx-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fx-panel > summary::before {
+  content: "▸";
+  margin-right: 4px;
+  color: var(--teal);
+}
+
+.fx-panel[open] > summary::before {
+  content: "▾";
+}
+
+.fx-panel__sub {
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+}
+
+.fx-panel__body {
+  padding-top: 4px;
+}
+
 /* 은행 현찰 우대 설정 */
 .bank-fx {
   margin-top: 12px;
@@ -1367,10 +1391,6 @@ body.saved-mode .segments {
 }
 
 /* 환전 이득 계산 */
-.exchange-advice {
-  margin-top: 4px;
-}
-
 .changer-rates {
   margin-bottom: 12px;
 }
