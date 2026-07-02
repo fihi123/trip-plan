@@ -2150,13 +2150,13 @@ body.compact .place-name {
 @media print {
   @page {
     size: A4;
-    margin: 14mm;
+    margin: 12mm 8mm;
   }
 
   body {
     background: #fff;
     color: #000;
-    width: 182mm;        /* A4(210mm) − 좌우 여백 14mm */
+    width: 194mm;        /* A4(210mm) − 좌우 여백 8mm */
     margin: 0 auto;
     font-size: 10.5pt;   /* A4 기준 본문 크기 */
     -webkit-print-color-adjust: exact;
@@ -2183,17 +2183,44 @@ body.compact .place-name {
 
   .print-itinerary {
     display: grid !important;
-    gap: 14px;
+    gap: 12px;
   }
 
   .print-day {
     break-inside: avoid;
     display: grid;
-    gap: 10px;
+    gap: 4px;
+  }
+
+  /* 한 일정은 한 줄: 왼쪽 내용 · 오른쪽 금액, 줄바꿈 없이 */
+  .print-event {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 3px 0;
+    border-bottom: 1px solid #eee;
   }
 
   .print-event__title {
+    flex: 1 1 auto;
+    min-width: 0;
     font-weight: 600;
+  }
+
+  .print-event__title small {
+    font-weight: 400;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  .print-event__cost {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .print-event.golf-event .print-event__title {
+    color: #8a6d00;
   }
 
   /* 편집/탐색용 UI는 PDF에서 숨긴다 */

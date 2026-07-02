@@ -676,25 +676,21 @@ function renderPrintItinerary() {
 
     let rows = items.map((event) => {
       const time = [event.start, event.end].filter(Boolean).join("~");
+      const sub = [time, eventCategory(event)].filter(Boolean).join(" · ");
       return `
-      <article class="event-card" data-kind="${eventKind(event)}">
-        <div class="event-main">
-          <div class="print-event__title">${html(event.name || "(제목 없음)")}${time ? ` <small>${html(time)}</small>` : ""}</div>
-          <div class="meta">${html(eventCategory(event))}</div>
-        </div>
-        ${event.budget ? `<div class="money-field">${phpText(Number(event.budget))}</div>` : ""}
+      <article class="print-event" data-kind="${eventKind(event)}">
+        <div class="print-event__title">${html(event.name || "(제목 없음)")}${sub ? ` <small>${html(sub)}</small>` : ""}</div>
+        <div class="print-event__cost">${event.budget ? phpText(Number(event.budget)) : ""}</div>
       </article>`;
     }).join("");
 
     rows += golfForDay.map((round) => {
       const breakdown = golfRoundBreakdown(round, golf.people);
+      const sub = [round.day, round.time, `1인 ${krwText(breakdown.total)}`].filter(Boolean).join(" · ");
       return `
-      <article class="event-card golf-event" data-kind="golf">
-        <div class="event-main">
-          <div class="print-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(round.day)}${round.time ? ` · ${html(round.time)}` : ""}</small></div>
-          <div class="meta">골프 · 1인 ${krwText(breakdown.total)} · ${usdText(breakdown.total)}</div>
-        </div>
-        <div class="money-field golf-event__cost">${phpText(breakdown.total)}</div>
+      <article class="print-event golf-event" data-kind="golf">
+        <div class="print-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(sub)}</small></div>
+        <div class="print-event__cost">${phpText(breakdown.total)}</div>
       </article>`;
     }).join("");
 
