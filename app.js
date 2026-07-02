@@ -839,7 +839,7 @@ function renderSpend() {
   if (heldResult) {
     heldResult.innerHTML = held.php > 0 ? `
       <div class="held-result__row held-result__row--accent">
-        <span class="held-result__label">추가로 환전할 금액 <small>(보유 ${held.parts.join(" + ")} 차감)</small></span>
+        <span class="held-result__label">추가 환전</span>
         <span class="held-result__value"><strong>${phpText(additional)}</strong> · ${krwText(additional)} · ${usdText(additional)}</span>
       </div>` : "";
   }
