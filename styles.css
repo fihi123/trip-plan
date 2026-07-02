@@ -968,13 +968,14 @@ body.saved-mode .segments {
 
 .golf-ref-table {
   overflow-x: auto;
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
 .golf-ref-table table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--fs-base);
+  margin-bottom: 20px;
 }
 
 .golf-ref-table th,
@@ -986,14 +987,21 @@ body.saved-mode .segments {
 }
 
 .golf-ref-table th {
-  color: var(--muted);
+  background: var(--field);
+  color: var(--ink);
   font-size: var(--fs-caption);
   font-weight: 900;
+  border-bottom: 2px solid var(--border-strong);
 }
 
 .golf-ref-table .golf-ref__name {
   text-align: left;
   font-weight: 800;
+}
+
+/* 이름 열 헤더는 데이터(좌측 정렬)와 맞춤, 두께는 헤더 기준 유지 */
+.golf-ref-table th.golf-ref__name {
+  font-weight: 900;
 }
 
 .golf-ref-table .golf-ref__name small {
@@ -1292,29 +1300,6 @@ body.saved-mode .segments {
 .spend-heading:first-child {
   margin-top: 0;
 }
-
-.golf-ref-table {
-  overflow-x: auto;
-  margin-top: 15px;
-}
-
-.golf-ref-table table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-}
-
-.golf-ref-table th {
-  background: var(--bg-subtle) !important;
-  color: var(--text-primary) !important;
-  border-bottom: 2px solid var(--border-strong);
-}
-
-.golf-ref-table td {
-  border-bottom: 1px solid var(--border);
-}
-
-
 
 /* 숙박 카드 한 줄: 결제 · 1박금액 · 통화 · 인원 · 박수 · 계산결과 */
 .lodging-card {

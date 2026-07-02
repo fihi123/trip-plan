@@ -723,7 +723,7 @@ function renderSpend() {
   spendBreakdown.innerHTML = `
     <h3 class="spend-heading">카테고리별</h3>
     <table>
-      <thead><tr><th>분류</th><th>항목</th><th>1회 금액</th><th>횟수</th><th>총액</th></tr></thead>
+      <thead><tr><th class="golf-ref__name">분류</th><th class="golf-ref__name">항목</th><th>1회 금액</th><th>횟수</th><th>총액</th></tr></thead>
       <tbody>
         ${categoryItemRows.map((row) => `
           <tr class="${row.subtotal ? "spend-subtotal-row" : ""}">
@@ -740,7 +740,7 @@ function renderSpend() {
 
     <h3 class="spend-heading">일차별</h3>
     <table>
-      <thead><tr><th>일차</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
+      <thead><tr><th class="golf-ref__name">일차</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
       <tbody>
         ${days.map((day) => `<tr><td class="golf-ref__name">${day ? `${day}일차` : "공통/추가"}</td>${moneyCells(byDay.get(day))}</tr>`).join("")}
         <tr class="spend-total-row"><td class="golf-ref__name">합계</td>${moneyCells(total)}</tr>
@@ -749,7 +749,7 @@ function renderSpend() {
 
     <h3 class="spend-heading">항목별</h3>
     <table>
-      <thead><tr><th>일차</th><th>항목</th><th>분류</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
+      <thead><tr><th class="golf-ref__name">일차</th><th class="golf-ref__name">항목</th><th class="golf-ref__name">분류</th><th>페소(₱)</th><th>원(₩)</th><th>달러($)</th></tr></thead>
       <tbody>
         ${detailRows.map((item) => `<tr><td>${item.day ? `${item.day}일차` : item.prepaid ? "선결제" : "공통/추가"}</td><td class="golf-ref__name">${html(item.name)}</td><td>${html(item.category)}</td>${moneyCells(item.amount)}</tr>`).join("")}
       </tbody>
