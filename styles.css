@@ -1402,6 +1402,85 @@ body.saved-mode .segments {
   margin-top: 0;
 }
 
+/* 환전 이득 계산 */
+.exchange-advice {
+  margin-top: 4px;
+}
+
+.exchange-advice__input {
+  flex: 0 1 220px;
+}
+
+.exchange-advice__input input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--field);
+  outline: none;
+}
+
+.exchange-advice__input input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+}
+
+.advice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.advice-card {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--field);
+}
+
+.advice-card--good {
+  border-left-color: var(--teal);
+}
+
+.advice-card--bad {
+  border-left-color: #d9534f;
+}
+
+.advice-card__label {
+  display: block;
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.advice-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  font-weight: 700;
+}
+
+.advice-row span {
+  color: var(--muted);
+}
+
+.advice-verdict {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.advice-verdict strong {
+  color: var(--teal);
+}
+
 @media (max-width: 760px) {
   .lodging-card {
     grid-template-columns: 1fr 1fr;

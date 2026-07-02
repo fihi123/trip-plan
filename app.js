@@ -1,7 +1,8 @@
 // === 환율 (원·달러·페소 모두 표기) ===
 // phpToKrw: 1페소당 원화, phpPerUsd: 1달러당 페소, krwPerUsd: 1달러당 원화.
+// changerPhpPerUsd: 사설환전소가 제시하는 1달러당 페소(직접 입력, 자동 갱신 대상 아님).
 // 지출 탭에서 직접 입력하거나 자동 갱신.
-const defaultRates = { phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06, updatedAt: "" };
+const defaultRates = { phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06, changerPhpPerUsd: 0, updatedAt: "" };
 
 const baseEvents = [
   { day: 1, name: "인천-클락", budget: 0, start: "21:00", end: "01:00" },
@@ -214,10 +215,12 @@ function loadRates() {
     ? Number(stored.phpPerUsd)
     : (legacyPhpToUsd > 0 ? 1 / legacyPhpToUsd : defaultRates.phpPerUsd);
   const krwPerUsd = Number(stored.krwPerUsd) > 0 ? Number(stored.krwPerUsd) : phpToKrw * phpPerUsd;
+  const changerPhpPerUsd = Number(stored.changerPhpPerUsd) > 0 ? Number(stored.changerPhpPerUsd) : 0;
   return {
     phpToKrw,
     phpPerUsd,
     krwPerUsd,
+    changerPhpPerUsd,
     updatedAt: typeof stored.updatedAt === "string" ? stored.updatedAt : "",
   };
 }
@@ -270,8 +273,10 @@ const memoField = document.querySelector("#memoNotes");
 const ratePhpKrw = document.querySelector("#ratePhpKrw");
 const rateKrwUsd = document.querySelector("#rateKrwUsd");
 const ratePhpUsd = document.querySelector("#ratePhpUsd");
+const changerPhpUsd = document.querySelector("#changerPhpUsd");
 const fetchRatesButton = document.querySelector("#fetchRatesButton");
 const ratesUpdated = document.querySelector("#ratesUpdated");
+const exchangeAdvice = document.querySelector("#exchangeAdvice");
 const spendSummary = document.querySelector("#spendSummary");
 const spendBreakdown = document.querySelector("#spendBreakdown");
 const extraSpendList = document.querySelector("#extraSpendList");
@@ -755,6 +760,80 @@ function renderSpend() {
       </tbody>
     </table>
   `;
+
+  renderExchangeAdvice();
+}
+
+// === 환전 이득 계산 (자동갱신 시세 vs 사설환전소 / 직접 vs 달러경유) ===
+function renderExchangeAdvice() {
+  if (!exchangeAdvice) return;
+  const pesos = spendItems()
+    .filter((item) => !item.prepaid)
+    .reduce((sum, item) => sum + item.amount, 0); // 환전할 금액 (페소)
+  const phpToKrw = Number(rates.phpToKrw) || 0;        // 원/페소 (직접)
+  const krwPerUsd = Number(rates.krwPerUsd) || 0;      // 원/달러
+  const market = Number(rates.phpPerUsd) || 0;         // 자동갱신 시세 페소/달러
+  const changer = Number(rates.changerPhpPerUsd) || 0; // 사설환전소 페소/달러
+  const won = (v) => `₩${Math.round(v).toLocaleString("ko-KR")}`;
+  const peso = (v) => `₱${Math.round(v).toLocaleString("ko-KR")}`;
+  const usd = (v) => `$${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+
+  // --- 1) 환율 비교: 자동갱신 시세 vs 사설환전소 (달러당 페소) ---
+  let rateBlock;
+  if (market > 0 && changer > 0) {
+    const diff = changer - market;               // +면 사설이 페소를 더 줌(이득)
+    const usdNeed = pesos > 0 ? pesos / changer : 0;
+    const extraPeso = diff * usdNeed;
+    const good = diff > 0;
+    rateBlock = `
+      <div class="advice-card ${diff === 0 ? "" : good ? "advice-card--good" : "advice-card--bad"}">
+        <span class="advice-card__label">환율 비교 · 달러당 페소</span>
+        <div class="advice-row"><span>자동갱신 시세</span><strong>₱${market.toFixed(2)} / $</strong></div>
+        <div class="advice-row"><span>사설환전소</span><strong>₱${changer.toFixed(2)} / $</strong></div>
+        <p class="advice-verdict">${diff === 0
+          ? "두 곳 환율이 같습니다."
+          : `사설환전소가 시세보다 달러당 <strong>${peso(Math.abs(diff))}</strong> ${good ? "더 줍니다" : "덜 줍니다"}` +
+            (usdNeed > 0 ? ` · 필요한 ${usd(usdNeed)} 환전 시 시세 대비 <strong>${good ? "+" : "−"}${peso(Math.abs(extraPeso))}</strong>` : "")}
+        </p>
+      </div>`;
+  } else {
+    rateBlock = `
+      <div class="advice-card">
+        <span class="advice-card__label">환율 비교 · 달러당 페소</span>
+        <p class="advice-verdict">자동갱신 시세($→₱)와 사설환전소 값을 모두 입력하면 비교됩니다.</p>
+      </div>`;
+  }
+
+  // --- 2) 경로 비교: 원→페소 직접 vs 원→달러→사설환전소 페소 ---
+  let routeBlock;
+  if (pesos > 0 && phpToKrw > 0 && krwPerUsd > 0 && changer > 0) {
+    const costDirect = pesos * phpToKrw;      // 원→페소 직접
+    const usdVia = pesos / changer;           // 사설환전소에서 필요한 달러
+    const costVia = usdVia * krwPerUsd;       // 원→달러→사설 페소
+    const gap = costDirect - costVia;         // +면 달러 경유가 원화 덜 듦(이득)
+    const better = gap > 0 ? "달러 사서 사설환전소" : gap < 0 ? "원화로 직접" : "";
+    const pct = Math.max(costDirect, costVia) > 0
+      ? (Math.abs(gap) / Math.max(costDirect, costVia) * 100).toFixed(1)
+      : "0.0";
+    routeBlock = `
+      <div class="advice-card ${gap === 0 ? "" : "advice-card--good"}">
+        <span class="advice-card__label">경로 비교 · 환전할 금액 ${peso(pesos)}</span>
+        <div class="advice-row"><span>A. 원→페소 직접</span><strong>${won(costDirect)}</strong></div>
+        <div class="advice-row"><span>B. 원→달러→사설페소</span><strong>${won(costVia)}</strong></div>
+        <p class="advice-verdict">${gap === 0
+          ? "두 경로 비용이 같습니다."
+          : `<strong>${better}</strong>가 <strong>${won(Math.abs(gap))}</strong> (${pct}%) 이득 · 달러 ${usd(usdVia)} 필요`}
+        </p>
+      </div>`;
+  } else {
+    routeBlock = `
+      <div class="advice-card">
+        <span class="advice-card__label">경로 비교</span>
+        <p class="advice-verdict">환전할 금액과 원/페소·원/달러·사설환전소 환율이 있어야 계산됩니다.</p>
+      </div>`;
+  }
+
+  exchangeAdvice.innerHTML = `<div class="advice-grid">${rateBlock}${routeBlock}</div>`;
 }
 
 // === 선결제 / 기타 지출 (추가·삭제·통화 선택) ===
@@ -799,6 +878,9 @@ function renderRates() {
   if (document.activeElement !== ratePhpKrw) ratePhpKrw.value = Number(rates.phpToKrw).toFixed(2);
   if (document.activeElement !== rateKrwUsd) rateKrwUsd.value = Number(rates.krwPerUsd).toFixed(2);
   if (document.activeElement !== ratePhpUsd) ratePhpUsd.value = Number(rates.phpPerUsd).toFixed(2);
+  if (changerPhpUsd && document.activeElement !== changerPhpUsd) {
+    changerPhpUsd.value = rates.changerPhpPerUsd > 0 ? Number(rates.changerPhpPerUsd).toFixed(2) : "";
+  }
   ratesUpdated.textContent = rates.updatedAt ? `갱신: ${rates.updatedAt}` : "직접 입력 또는 자동 갱신";
 }
 
@@ -2004,6 +2086,15 @@ ratePhpUsd.addEventListener("input", () => {
   renderSpend();
   renderGolf();
 });
+
+if (changerPhpUsd) {
+  changerPhpUsd.addEventListener("input", () => {
+    const value = Number(changerPhpUsd.value);
+    rates.changerPhpPerUsd = value > 0 ? value : 0;
+    saveRates();
+    renderExchangeAdvice();
+  });
+}
 
 fetchRatesButton.addEventListener("click", fetchRates);
 
