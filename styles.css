@@ -1171,15 +1171,26 @@ body.saved-mode .segments {
 }
 
 .held-panel .held-rates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin-bottom: 0;
 }
 
+.held-panel .held-rates .inline-field {
+  flex: initial;
+  min-width: 0;
+}
+
 .held-panel .held-result:not(:empty) {
-  margin-top: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(var(--teal-rgb), 0.25);
 }
 
 .held-panel .bank-fx__hint {
-  margin-top: 8px;
+  margin-top: 10px;
+  margin-bottom: 0;
 }
 
 .spend-total-bar__item {
