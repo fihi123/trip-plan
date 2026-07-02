@@ -6,7 +6,7 @@
 // 지출 탭에서 직접 입력하거나 자동 갱신.
 const defaultRates = {
   phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06, changerPhpPerUsd: 0,
-  usdSpread: 1.75, usdPref: 90, phpSpread: 5, phpPref: 20,
+  usdSpread: 1.75, usdPref: 90, phpSpread: 10, phpPref: 20,
   updatedAt: "",
 };
 
