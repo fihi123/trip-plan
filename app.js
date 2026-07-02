@@ -835,15 +835,11 @@ function renderSpend() {
     </div>
   `;
 
-  // 이미 보유(차감) → 추가로 환전할 금액: 보유 외화 입력칸 바로 아래에 표시
+  // 보유 외화 차감 후 → 추가로 환전할 금액 (핵심 값만 표시)
   if (heldResult) {
     heldResult.innerHTML = held.php > 0 ? `
-      <div class="held-result__row">
-        <span class="held-result__label">이미 보유 (차감)</span>
-        <span class="held-result__value">${held.parts.join(" + ")} ≈ ${phpText(held.php)}</span>
-      </div>
       <div class="held-result__row held-result__row--accent">
-        <span class="held-result__label">추가로 환전할 금액</span>
+        <span class="held-result__label">추가로 환전할 금액 <small>(보유 ${held.parts.join(" + ")} 차감)</small></span>
         <span class="held-result__value"><strong>${phpText(additional)}</strong> · ${krwText(additional)} · ${usdText(additional)}</span>
       </div>` : "";
   }
