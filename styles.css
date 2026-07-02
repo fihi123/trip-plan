@@ -6,15 +6,19 @@
   --line: var(--border);
   --paper: var(--bg-page);
   --panel: var(--bg-surface);
-  --teal: var(--success); /* 기존 teal 컬러를 success 토큰으로 매핑 */
-  --coral: var(--accent); /* 기존 coral 컬러를 accent 토큰으로 매핑 */
-  --gold: var(--warning); /* 기존 gold 컬러를 warning 토큰으로 매핑 */
-  --blue: var(--info);    /* 기존 blue 컬러를 info 토큰으로 매핑 */
+  /* Apple 원칙: 모든 "클릭 신호"는 단일 Action Blue(#0066cc)로 통일.
+     기존 인터랙션(teal 초록)·헤딩(blue) 색을 하나의 블루로 수렴. */
+  --primary: #0066cc;        /* Action Blue */
+  --primary-focus: #0071e3;  /* 포커스 링 */
+  --teal: var(--primary);    /* 액션/활성 색 → Action Blue */
+  --blue: var(--primary);    /* 헤딩/정보 색도 동일 액센트로 통일 */
+  --coral: var(--accent); /* 삭제·야간 등 의미색은 유지(COSMAX 레드) */
+  --gold: var(--warning); /* 음식·골프 카테고리 구분색 유지 */
   --field: var(--bg-subtle);
   --shadow: var(--shadow-card);
-  /* 상호작용 강조(green) 통일 — success 토큰(#047857) 기반 */
-  --teal-rgb: 4, 120, 87;
-  --ring: 0 0 0 3px rgba(var(--teal-rgb), 0.18);
+  /* rgba 틴트 기준을 Action Blue로 */
+  --teal-rgb: 0, 102, 204;
+  --ring: 0 0 0 3px rgba(var(--teal-rgb), 0.28);
 
   /* 글씨 크기 스케일 — tokens.css 기반으로 재정의 */
   --fs-caption: var(--fs-xs);
@@ -35,9 +39,11 @@
 body {
   margin: 0;
   min-width: 320px;
-  font-family: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Apple 우선 스택: Apple 기기에선 SF Pro, 그 외엔 Pretendard로 폴백 */
+  font-family: var(--font-sans);
   font-size: var(--fs-base);
   line-height: 1.45;
+  letter-spacing: var(--tracking-base);
   color: var(--ink);
   background: var(--paper);
   -webkit-font-smoothing: antialiased;
@@ -86,6 +92,7 @@ input {
   line-height: 1.25;
   max-width: none;
   font-weight: 800;
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
@@ -176,15 +183,15 @@ input {
   margin: 0 0 6px;
   font-size: var(--fs-caption);
   font-weight: 800;
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--coral);
+  color: var(--muted); /* Apple 절제: 컬러 노이즈 대신 조용한 라벨 */
 }
 
 h1,
 h2 {
   margin: 0;
-  letter-spacing: 0;
+  letter-spacing: -0.02em; /* Apple tight headline tracking */
 }
 
 h1 {
@@ -222,7 +229,8 @@ main {
 .panel,
 .metric {
   background: var(--panel);
-  box-shadow: var(--shadow);
+  /* Apple 원칙: 카드/버튼엔 그림자 없음 — 경계는 hairline으로만 */
+  box-shadow: none;
 }
 
 .controls {
@@ -315,6 +323,7 @@ body.saved-mode .segments {
 .metric strong {
   font-size: var(--fs-display);
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .metric strong.is-over {
@@ -945,7 +954,7 @@ body.saved-mode .segments {
 
 .panel {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg); /* 12px — 조금 더 부드러운 Apple 카드 */
   padding: 20px;
 }
 
@@ -1126,6 +1135,58 @@ body.saved-mode .segments {
   font-weight: 800;
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* === Apple 버튼 문법: 액션은 pill, 아이콘은 원형, 누르면 scale(0.96) === */
+.small-action,
+.data-button,
+.top-tab,
+.segment,
+.category-button,
+.map-link,
+.delete-place {
+  border-radius: var(--radius-pill);
+}
+
+.delete-inline {
+  border-radius: var(--radius-pill); /* 아이콘 버튼 → 원형 */
+}
+
+.small-action,
+.data-button,
+.top-tab,
+.segment,
+.category-button,
+.map-link,
+.delete-place,
+.delete-inline,
+.link-button {
+  transition: transform 0.12s ease, background-color 0.15s ease,
+    border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.small-action:active,
+.data-button:active,
+.top-tab:active,
+.segment:active,
+.category-button:active,
+.map-link:active,
+.delete-place:active,
+.delete-inline:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .small-action:active,
+  .data-button:active,
+  .top-tab:active,
+  .segment:active,
+  .category-button:active,
+  .map-link:active,
+  .delete-place:active,
+  .delete-inline:active {
+    transform: none;
+  }
 }
 
 /* 지출 전체 합계 — 한 줄 바 */

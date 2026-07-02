@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>클락 여행 플래너 — Apple 스타일 데모</title>
+    <style>
+      /* ============================================================
+         DESIGN.md (Apple-design-analysis) 전면 적용 데모
+         — 실제 앱에 반영하기 전 미리보기용 자체완결 파일
+         ============================================================ */
+      :root {
+        --primary: #0066cc;
+        --primary-focus: #0071e3;
+        --primary-on-dark: #2997ff;
+        --ink: #1d1d1f;
+        --body-muted: #cccccc;
+        --ink-48: #7a7a7a;
+        --ink-80: #333333;
+        --canvas: #ffffff;
+        --parchment: #f5f5f7;
+        --pearl: #fafafc;
+        --tile-dark: #272729;
+        --tile-dark-2: #2a2a2c;
+        --black: #000000;
+        --hairline: #e0e0e0;
+        --divider-soft: #f0f0f0;
+        --product-shadow: 0 3px 30px rgba(0, 0, 0, 0.22);
+
+        --font-display: "SF Pro Display", system-ui, -apple-system,
+          BlinkMacSystemFont, "Pretendard Variable", Pretendard,
+          "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        --font-text: "SF Pro Text", system-ui, -apple-system, BlinkMacSystemFont,
+          "Pretendard Variable", Pretendard, "Apple SD Gothic Neo",
+          "Noto Sans KR", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--font-text);
+        font-size: 17px;
+        line-height: 1.47;
+        letter-spacing: -0.374px;
+        color: var(--ink);
+        background: var(--canvas);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: var(--font-display);
+        font-weight: 600;
+        margin: 0;
+      }
+
+      button {
+        font: inherit;
+        cursor: pointer;
+      }
+
+      /* ---------- Global nav (thin black bar) ---------- */
+      .global-nav {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 44px;
+        padding: 0 22px;
+        background: var(--black);
+        color: #fff;
+        font-size: 12px;
+        letter-spacing: -0.12px;
+      }
+      .global-nav strong {
+        font-weight: 600;
+      }
+      .global-nav .nav-right {
+        opacity: 0.8;
+      }
+
+      /* ---------- Sub-nav (frosted) ---------- */
+      .sub-nav {
+        position: sticky;
+        top: 44px;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        height: 56px;
+        padding: 0 22px;
+        background: rgba(245, 245, 247, 0.8);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      }
+      .sub-nav__title {
+        font-family: var(--font-display);
+        font-size: 21px;
+        font-weight: 600;
+        letter-spacing: 0.231px;
+        white-space: nowrap;
+      }
+      .sub-nav__tabs {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .sub-nav__tabs::-webkit-scrollbar {
+        display: none;
+      }
+      .tab {
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        font-size: 14px;
+        letter-spacing: -0.224px;
+        padding: 8px 14px;
+        border-radius: 9999px;
+        white-space: nowrap;
+        transition: transform 0.12s ease, background-color 0.15s ease,
+          color 0.15s ease;
+      }
+      .tab.is-active {
+        background: var(--ink);
+        color: #fff;
+      }
+      .tab:active {
+        transform: scale(0.96);
+      }
+
+      /* ---------- Buttons ---------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 0;
+        border-radius: 9999px;
+        padding: 11px 22px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 17px;
+        letter-spacing: -0.374px;
+        transition: transform 0.12s ease, background-color 0.15s ease;
+      }
+      .btn:active {
+        transform: scale(0.96);
+      }
+      .btn--ghost {
+        background: transparent;
+        color: var(--primary);
+        border: 1px solid var(--primary);
+      }
+      .btn--on-dark {
+        background: var(--primary);
+      }
+      .link {
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 17px;
+      }
+      .link--on-dark {
+        color: var(--primary-on-dark);
+      }
+      .link::after {
+        content: " ›";
+      }
+
+      /* ---------- Tiles (edge-to-edge, alternating) ---------- */
+      .tile {
+        padding: 80px 22px;
+      }
+      .tile__inner {
+        max-width: 980px;
+        margin: 0 auto;
+      }
+      .tile--light {
+        background: var(--canvas);
+      }
+      .tile--parchment {
+        background: var(--parchment);
+      }
+      .tile--dark {
+        background: var(--tile-dark);
+        color: #fff;
+      }
+      .tile--dark h1,
+      .tile--dark h2,
+      .tile--dark h3 {
+        color: #fff;
+      }
+
+      .eyebrow {
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--ink-48);
+        margin: 0 0 12px;
+      }
+      .tile--dark .eyebrow {
+        color: var(--body-muted);
+      }
+      .tile__center {
+        text-align: center;
+      }
+
+      /* ---------- Hero ---------- */
+      .hero h1 {
+        font-size: 56px;
+        line-height: 1.07;
+        letter-spacing: -0.28px;
+      }
+      .hero .lead {
+        font-size: 28px;
+        line-height: 1.14;
+        font-weight: 400;
+        color: var(--ink-80);
+        margin: 16px 0 8px;
+        letter-spacing: 0;
+      }
+      .hero .dates {
+        font-size: 21px;
+        color: var(--primary);
+        font-weight: 600;
+        margin: 0 0 32px;
+        letter-spacing: 0;
+      }
+      .hero .cta-row {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .section-head {
+        margin-bottom: 48px;
+      }
+      .section-head h2 {
+        font-size: 40px;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+      .tile__center .section-head {
+        text-align: center;
+      }
+
+      /* ---------- Day segments (pills) ---------- */
+      .segments {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 40px;
+      }
+      .seg {
+        border: 1px solid var(--hairline);
+        background: var(--canvas);
+        color: var(--ink);
+        border-radius: 9999px;
+        padding: 10px 18px;
+        font-size: 14px;
+        transition: transform 0.12s ease;
+      }
+      .seg.is-active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+      }
+      .seg:active {
+        transform: scale(0.96);
+      }
+
+      /* ---------- Timeline / utility cards ---------- */
+      .cards {
+        display: grid;
+        gap: 16px;
+      }
+      .card {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 20px;
+        background: var(--canvas);
+        border: 1px solid var(--hairline);
+        border-radius: 18px;
+        padding: 24px;
+      }
+      .tile--parchment .card {
+        background: var(--canvas);
+      }
+      .card__time {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary);
+        letter-spacing: -0.224px;
+        white-space: nowrap;
+        flex: 0 0 auto;
+      }
+      .card__body {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .card__title {
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.374px;
+      }
+      .card__meta {
+        font-size: 14px;
+        color: var(--ink-48);
+        letter-spacing: -0.224px;
+        margin-top: 4px;
+      }
+      .card__cost {
+        font-size: 17px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        letter-spacing: -0.374px;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 12px;
+        color: var(--ink-48);
+        border: 1px solid var(--hairline);
+        border-radius: 9999px;
+        padding: 2px 10px;
+        margin-top: 8px;
+      }
+
+      /* ---------- Stat / big numbers ---------- */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .stat {
+        text-align: left;
+      }
+      .stat__label {
+        font-size: 14px;
+        color: var(--body-muted);
+        letter-spacing: -0.224px;
+      }
+      .tile--light .stat__label,
+      .tile--parchment .stat__label {
+        color: var(--ink-48);
+      }
+      .stat__value {
+        font-family: var(--font-display);
+        font-size: 40px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        margin-top: 6px;
+      }
+      .stat__value--accent {
+        color: var(--primary-on-dark);
+      }
+      .stat__sub {
+        font-size: 14px;
+        color: var(--body-muted);
+        margin-top: 4px;
+      }
+
+      .held {
+        margin-top: 40px;
+        padding-top: 32px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .held__field {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 17px;
+      }
+      .held__field input {
+        width: 120px;
+        height: 44px;
+        border-radius: 9999px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.06);
+        color: #fff;
+        padding: 0 18px;
+        font: inherit;
+        text-align: right;
+        outline: none;
+      }
+      .held__field input:focus {
+        border-color: var(--primary-on-dark);
+        box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.28);
+      }
+
+      /* ---------- Golf round cards ---------- */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .round {
+        background: var(--canvas);
+        border: 1px solid var(--hairline);
+        border-radius: 18px;
+        padding: 24px;
+      }
+      .round__no {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary);
+        letter-spacing: -0.224px;
+      }
+      .round__name {
+        font-size: 21px;
+        font-weight: 600;
+        letter-spacing: 0;
+        margin: 6px 0 16px;
+      }
+      .round__total {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding-top: 16px;
+        border-top: 1px solid var(--divider-soft);
+      }
+      .round__total .n {
+        font-family: var(--font-display);
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--primary);
+      }
+
+      /* ---------- Memo ---------- */
+      .memo {
+        max-width: 720px;
+        margin: 0 auto;
+        font-size: 21px;
+        line-height: 1.6;
+        color: var(--ink-80);
+        letter-spacing: 0;
+      }
+
+      /* ---------- Footer ---------- */
+      .footer {
+        background: var(--parchment);
+        color: var(--ink-48);
+        padding: 48px 22px;
+        text-align: center;
+        font-size: 12px;
+        letter-spacing: -0.12px;
+      }
+
+      .demo-banner {
+        background: var(--primary);
+        color: #fff;
+        text-align: center;
+        padding: 10px 16px;
+        font-size: 13px;
+        letter-spacing: -0.224px;
+      }
+
+      /* ---------- Section visibility ---------- */
+      .view {
+        display: none;
+      }
+      .view.is-active {
+        display: block;
+      }
+
+      @media (max-width: 734px) {
+        .tile {
+          padding: 56px 20px;
+        }
+        .hero h1 {
+          font-size: 34px;
+          letter-spacing: -0.5px;
+        }
+        .hero .lead {
+          font-size: 21px;
+        }
+        .section-head h2 {
+          font-size: 30px;
+        }
+        .stats {
+          grid-template-columns: 1fr;
+          gap: 28px;
+        }
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="demo-banner">
+      DESIGN.md 전면 적용 데모 — 실제 앱(index.html)에는 원칙만 선별 적용됨
+    </div>
+
+    <nav class="global-nav">
+      <strong>My Clark Trip</strong>
+      <span class="nav-right">가이드 · 지출 · 골프 · 메모</span>
+    </nav>
+
+    <div class="sub-nav">
+      <span class="sub-nav__title">클락 여행</span>
+      <div class="sub-nav__tabs" role="tablist">
+        <button class="tab is-active" data-view="guide" type="button">일정</button>
+        <button class="tab" data-view="spend" type="button">지출</button>
+        <button class="tab" data-view="golf" type="button">골프</button>
+        <button class="tab" data-view="notes" type="button">메모</button>
+      </div>
+      <button class="btn" type="button" style="padding: 8px 18px; font-size: 14px">
+        저장
+      </button>
+    </div>
+
+    <main>
+      <!-- ===== HERO ===== -->
+      <section class="tile tile--parchment hero tile__center">
+        <div class="tile__inner">
+          <p class="eyebrow">Angeles · Philippines</p>
+          <h1>클락 여행 플래너</h1>
+          <p class="lead">골프와 휴식, 그리고 완벽한 예산.</p>
+          <p class="dates">3박 4일 · 2026. 7. 12 – 7. 15</p>
+          <div class="cta-row">
+            <button class="btn" type="button">일정 보기</button>
+            <button class="btn btn--ghost" type="button">PDF 저장</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 일정 ===== -->
+      <div class="view is-active" id="view-guide">
+        <section class="tile tile--light tile__center">
+          <div class="tile__inner">
+            <div class="section-head">
+              <p class="eyebrow">Timeline</p>
+              <h2>일정</h2>
+            </div>
+            <div class="segments">
+              <button class="seg is-active" type="button">Day 1</button>
+              <button class="seg" type="button">Day 2</button>
+              <button class="seg" type="button">Day 3</button>
+              <button class="seg" type="button">Day 4</button>
+            </div>
+            <div class="cards" style="text-align: left">
+              <div class="card">
+                <span class="card__time">10:20</span>
+                <div class="card__body">
+                  <div class="card__title">인천 → 클락 (도착)</div>
+                  <div class="card__meta">에어아시아 · 클락국제공항</div>
+                </div>
+                <span class="card__cost">—</span>
+              </div>
+              <div class="card">
+                <span class="card__time">13:00</span>
+                <div class="card__body">
+                  <div class="card__title">호텔 체크인 · 점심</div>
+                  <div class="card__meta">Clark Marriott · 로컬 레스토랑</div>
+                  <span class="tag">식사</span>
+                </div>
+                <span class="card__cost">₩38,000</span>
+              </div>
+              <div class="card">
+                <span class="card__time">18:30</span>
+                <div class="card__body">
+                  <div class="card__title">마사지 &amp; 나이트</div>
+                  <div class="card__meta">Walking Street</div>
+                  <span class="tag">야간</span>
+                </div>
+                <span class="card__cost">₩52,000</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== 지출 ===== -->
+      <div class="view" id="view-spend">
+        <section class="tile tile--dark">
+          <div class="tile__inner">
+            <div class="section-head">
+              <p class="eyebrow">Budget</p>
+              <h2>지출 내역</h2>
+            </div>
+            <div class="stats">
+              <div class="stat">
+                <div class="stat__label">전체 지출</div>
+                <div class="stat__value">₩1,240,000</div>
+                <div class="stat__sub">일정 + 숙박 + 골프 + 기타</div>
+              </div>
+              <div class="stat">
+                <div class="stat__label">환전할 금액</div>
+                <div class="stat__value stat__value--accent">₩880,000</div>
+                <div class="stat__sub">선결제 제외</div>
+              </div>
+              <div class="stat">
+                <div class="stat__label">1인 부담</div>
+                <div class="stat__value">₩310,000</div>
+                <div class="stat__sub">4인 기준</div>
+              </div>
+            </div>
+            <div class="held">
+              <div class="stat__label" style="width: 100%; font-weight: 600">
+                보유 외화 차감 후 추가 환전
+              </div>
+              <label class="held__field">페소 ₱ <input value="12,000" /></label>
+              <label class="held__field">달러 $ <input value="200" /></label>
+              <a class="link link--on-dark" href="#">환율 &amp; 환전 이득 계산</a>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== 골프 ===== -->
+      <div class="view" id="view-golf">
+        <section class="tile tile--parchment tile__center">
+          <div class="tile__inner">
+            <div class="section-head">
+              <p class="eyebrow">Golf</p>
+              <h2>골프 비용</h2>
+            </div>
+            <div class="grid-2" style="text-align: left">
+              <div class="round">
+                <div class="round__no">Round 1</div>
+                <div class="round__name">Mimosa Plus</div>
+                <div class="card__meta">그린피 + 카트 + 캐디 · 4인</div>
+                <div class="round__total">
+                  <span class="stat__label" style="color: var(--ink-48)">1인</span>
+                  <span class="n">₩142,000</span>
+                </div>
+              </div>
+              <div class="round">
+                <div class="round__no">Round 2</div>
+                <div class="round__name">Sun Valley</div>
+                <div class="card__meta">그린피 + 카트 + 캐디 · 4인</div>
+                <div class="round__total">
+                  <span class="stat__label" style="color: var(--ink-48)">1인</span>
+                  <span class="n">₩128,000</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== 메모 ===== -->
+      <div class="view" id="view-notes">
+        <section class="tile tile--light tile__center">
+          <div class="tile__inner">
+            <div class="section-head">
+              <p class="eyebrow">Notes</p>
+              <h2>메모</h2>
+            </div>
+            <p class="memo">
+              여권 만료일 확인 · 골프백 위탁 규정 재확인 · 페소 환전은 현지 사설환전소
+              (SM Clark 인근)가 유리. 우천 시 Round 2는 Sun Valley → Mimosa로 변경 검토.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      My Clark Trip · Apple 스타일 데모 · DESIGN.md v-alpha
+    </footer>
+
+    <script>
+      const tabs = document.querySelectorAll(".tab");
+      const views = document.querySelectorAll(".view");
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((t) => t.classList.toggle("is-active", t === tab));
+          const target = tab.dataset.view;
+          views.forEach((v) =>
+            v.classList.toggle("is-active", v.id === "view-" + target)
+          );
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+    </script>
+  </body>
+</html>
