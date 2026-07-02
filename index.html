@@ -144,6 +144,21 @@
               </div>
 
               <div class="spend-subtitle">
+                <h3 class="spend-heading">이미 보유한 외화</h3>
+              </div>
+              <div class="rates-section held-rates" aria-label="보유 외화">
+                <label class="inline-field">
+                  <span>보유 페소 ₱</span>
+                  <input id="heldPhp" inputmode="numeric" aria-label="보유 페소" placeholder="0" />
+                </label>
+                <label class="inline-field">
+                  <span>보유 달러 $</span>
+                  <input id="heldUsd" inputmode="numeric" aria-label="보유 달러" placeholder="0" />
+                </label>
+                <p class="bank-fx__hint">이미 가진 페소·달러를 넣으면 <strong>추가로 환전할 금액</strong>에서 차감됩니다. (달러는 페소/달러 시세로 환산)</p>
+              </div>
+
+              <div class="spend-subtitle">
                 <h3 class="spend-heading">환전 이득 계산</h3>
               </div>
               <div id="exchangeAdvice"></div>

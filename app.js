@@ -8,6 +8,7 @@ const defaultRates = {
   phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06,
   changerPhpToKrw: 0, changerKrwPerUsd: 0, changerPhpPerUsd: 0,
   usdSpread: 1.75, usdPref: 90, phpSpread: 10, phpPref: 20,
+  heldUsd: 0, heldPhp: 0, // 이미 보유한 달러·페소(추가 환전액 계산에 차감)
   updatedAt: "",
 };
 
@@ -261,6 +262,8 @@ function loadRates() {
   const changerPhpToKrw = Number(stored.changerPhpToKrw) > 0 ? Number(stored.changerPhpToKrw) : 0;
   const changerKrwPerUsd = Number(stored.changerKrwPerUsd) > 0 ? Number(stored.changerKrwPerUsd) : 0;
   const changerPhpPerUsd = Number(stored.changerPhpPerUsd) > 0 ? Number(stored.changerPhpPerUsd) : 0;
+  const heldUsd = Number(stored.heldUsd) > 0 ? Number(stored.heldUsd) : 0;
+  const heldPhp = Number(stored.heldPhp) > 0 ? Number(stored.heldPhp) : 0;
   // 스프레드·우대율은 0 이상 유효값이면 그대로, 아니면 기본값
   const pct = (value, fallback) => {
     const n = Number(value);
@@ -273,6 +276,8 @@ function loadRates() {
     changerPhpToKrw,
     changerKrwPerUsd,
     changerPhpPerUsd,
+    heldUsd,
+    heldPhp,
     usdSpread: pct(stored.usdSpread, defaultRates.usdSpread),
     usdPref: pct(stored.usdPref, defaultRates.usdPref),
     phpSpread: pct(stored.phpSpread, defaultRates.phpSpread),
@@ -336,6 +341,8 @@ const usdSpreadInput = document.querySelector("#usdSpread");
 const usdPrefInput = document.querySelector("#usdPref");
 const phpSpreadInput = document.querySelector("#phpSpread");
 const phpPrefInput = document.querySelector("#phpPref");
+const heldPhpInput = document.querySelector("#heldPhp");
+const heldUsdInput = document.querySelector("#heldUsd");
 const fetchRatesButton = document.querySelector("#fetchRatesButton");
 const ratesUpdated = document.querySelector("#ratesUpdated");
 const exchangeAdvice = document.querySelector("#exchangeAdvice");
@@ -428,6 +435,17 @@ function toPhp(amount, currency) {
   if (currency === "PHP") return value;
   if (currency === "USD") return rates.phpPerUsd > 0 ? value * rates.phpPerUsd : 0;
   return rates.phpToKrw > 0 ? value / rates.phpToKrw : 0;
+}
+
+// 이미 보유한 외화(페소·달러)를 페소로 환산. 달러는 페소/달러 시세로 환산.
+function heldInPhp() {
+  const heldPhp = Number(rates.heldPhp) > 0 ? Number(rates.heldPhp) : 0;
+  const heldUsd = Number(rates.heldUsd) > 0 ? Number(rates.heldUsd) : 0;
+  const parts = [];
+  if (heldPhp > 0) parts.push(`₱${Math.round(heldPhp).toLocaleString("ko-KR")}`);
+  if (heldUsd > 0) parts.push(`$${heldUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}`);
+  const php = heldPhp + (rates.phpPerUsd > 0 ? heldUsd * rates.phpPerUsd : 0);
+  return { php, heldPhp, heldUsd, parts };
 }
 
 function lodgingBreakdown(lodging) {
@@ -801,6 +819,19 @@ function renderSpend() {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   // 환전해야 할 금액 = 총액 − 선결제(현지에서 쓸 일정+골프 비용)
   const exchange = items.filter((item) => !item.prepaid).reduce((sum, item) => sum + item.amount, 0);
+  // 이미 보유한 외화를 페소로 환산해 차감 → 추가로 환전할 금액
+  const held = heldInPhp();
+  const additional = Math.max(0, exchange - held.php);
+
+  const heldRow = held.php > 0 ? `
+    <div class="spend-total-bar__item">
+      <span class="spend-total-bar__label">이미 보유 (차감)</span>
+      <span class="spend-total-bar__amounts">${held.parts.join(" + ")} ≈ ${phpText(held.php)}</span>
+    </div>
+    <div class="spend-total-bar__item spend-total-bar__item--accent">
+      <span class="spend-total-bar__label">추가로 환전할 금액</span>
+      <span class="spend-total-bar__amounts"><strong>${phpText(additional)}</strong> · ${krwText(additional)} · ${usdText(additional)}</span>
+    </div>` : "";
 
   spendSummary.innerHTML = `
     <div class="spend-total-bar__item">
@@ -811,6 +842,7 @@ function renderSpend() {
       <span class="spend-total-bar__label">환전할 금액 (선결제 제외)</span>
       <span class="spend-total-bar__amounts"><strong>${phpText(exchange)}</strong> · ${krwText(exchange)} · ${usdText(exchange)}</span>
     </div>
+    ${heldRow}
   `;
 
   // 기본 분류 순서를 먼저, 그 뒤에 "기타" 직접 입력 분류를 이어 붙인다.
@@ -890,9 +922,11 @@ function renderSpend() {
 // === 환전 이득 계산 (자동갱신 vs 사설환전소 · 환율 3종 비교 + 경로별 최저비용) ===
 function renderExchangeAdvice() {
   if (!exchangeAdvice) return;
-  const pesos = spendItems()
+  const needed = spendItems()
     .filter((item) => !item.prepaid)
     .reduce((sum, item) => sum + item.amount, 0); // 환전할 금액 (페소)
+  const held = heldInPhp();
+  const pesos = Math.max(0, needed - held.php); // 보유분 차감 후 추가로 환전할 페소
   const num = (v) => (Number(v) > 0 ? Number(v) : 0);
   const o = { phpKrw: num(rates.phpToKrw), krwUsd: num(rates.krwPerUsd), phpUsd: num(rates.phpPerUsd) };        // 자동갱신
   const c = { phpKrw: num(rates.changerPhpToKrw), krwUsd: num(rates.changerKrwPerUsd), phpUsd: num(rates.changerPhpPerUsd) }; // 사설
@@ -947,9 +981,15 @@ function renderExchangeAdvice() {
       </div>`).join("");
     routeBlock = `
       <div class="advice-card advice-card--good">
-        <span class="advice-card__label">경로 비교 · 환전할 금액 ${peso(pesos)}</span>
+        <span class="advice-card__label">경로 비교 · ${held.php > 0 ? "추가 환전 금액" : "환전할 금액"} ${peso(pesos)}${held.php > 0 ? ` (보유 ${peso(held.php)} 차감)` : ""}</span>
         ${rows}
         <p class="advice-verdict">가장 싼 방법: <strong>${routes[0].label}</strong> · ${won(min)}</p>
+      </div>`;
+  } else if (needed > 0 && held.php >= needed) {
+    routeBlock = `
+      <div class="advice-card advice-card--good">
+        <span class="advice-card__label">경로 비교</span>
+        <p class="advice-verdict">보유 외화(${peso(held.php)})로 환전할 금액(${peso(needed)})을 모두 충당할 수 있어 <strong>추가 환전이 필요 없습니다.</strong></p>
       </div>`;
   } else {
     routeBlock = `
@@ -1017,6 +1057,11 @@ function renderRates() {
   setPct(usdPrefInput, rates.usdPref);
   setPct(phpSpreadInput, rates.phpSpread);
   setPct(phpPrefInput, rates.phpPref);
+  const setHeld = (el, value) => {
+    if (el && document.activeElement !== el) el.value = value > 0 ? String(value) : "";
+  };
+  setHeld(heldPhpInput, rates.heldPhp);
+  setHeld(heldUsdInput, rates.heldUsd);
   ratesUpdated.textContent = rates.updatedAt ? `갱신: ${rates.updatedAt}` : "직접 입력 또는 자동 갱신";
 }
 
@@ -2274,6 +2319,20 @@ ratePhpUsd.addEventListener("input", () => {
     const n = Number(el.value);
     rates[key] = Number.isFinite(n) && n >= 0 ? n : 0;
     saveRates();
+  });
+});
+
+// 이미 보유한 외화 — 추가로 환전할 금액에서 차감
+[
+  [heldPhpInput, "heldPhp"],
+  [heldUsdInput, "heldUsd"],
+].forEach(([el, key]) => {
+  if (!el) return;
+  el.addEventListener("input", () => {
+    const n = Number(el.value);
+    rates[key] = Number.isFinite(n) && n > 0 ? n : 0;
+    saveRates();
+    renderSpend();
   });
 });
 

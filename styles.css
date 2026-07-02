@@ -1177,6 +1177,11 @@ body.saved-mode .segments {
   font-size: var(--fs-xl);
 }
 
+/* 추가로 환전할 금액(보유 외화 차감 후) 강조 */
+.spend-total-bar__item--accent .spend-total-bar__label {
+  color: var(--teal);
+}
+
 /* 지출 페이지 소제목 */
 .spend-subtitle {
   display: flex;
