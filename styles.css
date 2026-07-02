@@ -1147,10 +1147,15 @@ body.saved-mode .segments {
 }
 
 /* 이미 보유한 외화 (통합 박스 내부, 구분선으로 분리) */
+/* 입력(제목·페소·달러)과 결과(추가 환전)를 한 줄에 */
 .held-panel {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed rgba(var(--teal-rgb), 0.35);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
 }
 
 .held-panel__head {
@@ -1192,9 +1197,9 @@ body.saved-mode .segments {
 }
 
 .held-panel .held-result:not(:empty) {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed rgba(var(--teal-rgb), 0.35);
+  margin: 0;
+  padding: 0;
+  border-top: none;
 }
 
 .held-result__label small {
