@@ -1,8 +1,14 @@
 // === 환율 (원·달러·페소 모두 표기) ===
 // phpToKrw: 1페소당 원화, phpPerUsd: 1달러당 페소, krwPerUsd: 1달러당 원화.
 // changerPhpPerUsd: 사설환전소가 제시하는 1달러당 페소(직접 입력, 자동 갱신 대상 아님).
+// usdSpread/phpSpread: 현찰 살 때 매매기준율 대비 가산율(%). usdPref/phpPref: 환율우대(%).
+//   현찰 살 때 = 매매기준율 × (1 + 스프레드% × (1 − 우대%)). 자동 갱신 시 원/달러·원/페소에 적용.
 // 지출 탭에서 직접 입력하거나 자동 갱신.
-const defaultRates = { phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06, changerPhpPerUsd: 0, updatedAt: "" };
+const defaultRates = {
+  phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06, changerPhpPerUsd: 0,
+  usdSpread: 1.75, usdPref: 90, phpSpread: 5, phpPref: 20,
+  updatedAt: "",
+};
 
 const baseEvents = [
   { day: 1, name: "인천-클락", budget: 0, start: "21:00", end: "01:00" },
@@ -216,11 +222,20 @@ function loadRates() {
     : (legacyPhpToUsd > 0 ? 1 / legacyPhpToUsd : defaultRates.phpPerUsd);
   const krwPerUsd = Number(stored.krwPerUsd) > 0 ? Number(stored.krwPerUsd) : phpToKrw * phpPerUsd;
   const changerPhpPerUsd = Number(stored.changerPhpPerUsd) > 0 ? Number(stored.changerPhpPerUsd) : 0;
+  // 스프레드·우대율은 0 이상 유효값이면 그대로, 아니면 기본값
+  const pct = (value, fallback) => {
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : fallback;
+  };
   return {
     phpToKrw,
     phpPerUsd,
     krwPerUsd,
     changerPhpPerUsd,
+    usdSpread: pct(stored.usdSpread, defaultRates.usdSpread),
+    usdPref: pct(stored.usdPref, defaultRates.usdPref),
+    phpSpread: pct(stored.phpSpread, defaultRates.phpSpread),
+    phpPref: pct(stored.phpPref, defaultRates.phpPref),
     updatedAt: typeof stored.updatedAt === "string" ? stored.updatedAt : "",
   };
 }
@@ -274,6 +289,10 @@ const ratePhpKrw = document.querySelector("#ratePhpKrw");
 const rateKrwUsd = document.querySelector("#rateKrwUsd");
 const ratePhpUsd = document.querySelector("#ratePhpUsd");
 const changerPhpUsd = document.querySelector("#changerPhpUsd");
+const usdSpreadInput = document.querySelector("#usdSpread");
+const usdPrefInput = document.querySelector("#usdPref");
+const phpSpreadInput = document.querySelector("#phpSpread");
+const phpPrefInput = document.querySelector("#phpPref");
 const fetchRatesButton = document.querySelector("#fetchRatesButton");
 const ratesUpdated = document.querySelector("#ratesUpdated");
 const exchangeAdvice = document.querySelector("#exchangeAdvice");
@@ -881,6 +900,13 @@ function renderRates() {
   if (changerPhpUsd && document.activeElement !== changerPhpUsd) {
     changerPhpUsd.value = rates.changerPhpPerUsd > 0 ? Number(rates.changerPhpPerUsd).toFixed(2) : "";
   }
+  const setPct = (el, value) => {
+    if (el && document.activeElement !== el) el.value = String(value);
+  };
+  setPct(usdSpreadInput, rates.usdSpread);
+  setPct(usdPrefInput, rates.usdPref);
+  setPct(phpSpreadInput, rates.phpSpread);
+  setPct(phpPrefInput, rates.phpPref);
   ratesUpdated.textContent = rates.updatedAt ? `갱신: ${rates.updatedAt}` : "직접 입력 또는 자동 갱신";
 }
 
@@ -892,9 +918,15 @@ async function fetchRates() {
     const response = await fetch("https://open.er-api.com/v6/latest/PHP");
     const data = await response.json();
     if (data.result !== "success" || !data.rates || !data.rates.KRW || !data.rates.USD) throw new Error("bad");
-    rates.phpToKrw = data.rates.KRW;
-    rates.phpPerUsd = 1 / data.rates.USD;
-    rates.krwPerUsd = data.rates.KRW / data.rates.USD;
+    // 매매기준율(시세) 원본
+    const midPhpToKrw = data.rates.KRW;              // 원/페소
+    const midKrwPerUsd = data.rates.KRW / data.rates.USD; // 원/달러
+    const midPhpPerUsd = 1 / data.rates.USD;         // 페소/달러
+    // 현찰 살 때 = 매매기준율 × (1 + 스프레드% × (1 − 우대%))
+    const cashFactor = (spread, pref) => 1 + (Number(spread) / 100) * (1 - Number(pref) / 100);
+    rates.phpToKrw = midPhpToKrw * cashFactor(rates.phpSpread, rates.phpPref);
+    rates.krwPerUsd = midKrwPerUsd * cashFactor(rates.usdSpread, rates.usdPref);
+    rates.phpPerUsd = midPhpPerUsd; // 페소/달러는 국내 은행 현찰 대상이 아니므로 시세 유지
     rates.updatedAt = data.time_last_update_utc || new Date().toLocaleString("ko-KR");
     saveRates();
     renderRates();
@@ -2095,6 +2127,21 @@ if (changerPhpUsd) {
     renderExchangeAdvice();
   });
 }
+
+// 은행 현찰 우대 설정 — 저장만 하고, 값은 다음 "환율 자동 갱신" 때 반영
+[
+  [usdSpreadInput, "usdSpread"],
+  [usdPrefInput, "usdPref"],
+  [phpSpreadInput, "phpSpread"],
+  [phpPrefInput, "phpPref"],
+].forEach(([el, key]) => {
+  if (!el) return;
+  el.addEventListener("input", () => {
+    const n = Number(el.value);
+    rates[key] = Number.isFinite(n) && n >= 0 ? n : 0;
+    saveRates();
+  });
+});
 
 fetchRatesButton.addEventListener("click", fetchRates);
 

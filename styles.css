@@ -1296,6 +1296,66 @@ body.saved-mode .segments {
   margin-top: 0;
 }
 
+/* 은행 현찰 우대 설정 */
+.bank-fx {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+}
+
+.bank-fx > summary {
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
+}
+
+.bank-fx > summary::-webkit-details-marker {
+  display: none;
+}
+
+.bank-fx > summary::before {
+  content: "▸ ";
+  color: var(--teal);
+}
+
+.bank-fx[open] > summary::before {
+  content: "▾ ";
+}
+
+.bank-fx__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 0 14px 4px;
+}
+
+.bank-fx__grid input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--bg-surface);
+  outline: none;
+}
+
+.bank-fx__grid input:focus {
+  border-color: var(--teal);
+  box-shadow: var(--ring);
+}
+
+.bank-fx__hint {
+  margin: 8px 14px 12px;
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
 /* 환전 이득 계산 */
 .exchange-advice {
   margin-top: 4px;
