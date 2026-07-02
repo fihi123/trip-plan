@@ -6,8 +6,8 @@
     <title>클락(앙헬레스) 여행 플래너</title>
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
-    <link rel="stylesheet" href="design-system/tokens.css?v=8" />
-    <link rel="stylesheet" href="styles.css?v=8" />
+    <link rel="stylesheet" href="design-system/tokens.css?v=9" />
+    <link rel="stylesheet" href="styles.css?v=9" />
   </head>
   <body>
     <header class="hero">
@@ -65,11 +65,12 @@
       </section>
 
       <section class="spend-view is-hidden" aria-labelledby="spendTitle">
-        <section class="panel">
+        <!-- 카드 1 · 지출 요약 + 보유 외화 (강조 카드) -->
+        <section class="panel spend-card spend-card--summary">
           <div class="section-title">
             <div>
               <p class="eyebrow">Budget</p>
-              <h2 id="spendTitle">지출 내역</h2>
+              <h2 id="spendTitle">지출 요약</h2>
             </div>
             <div class="section-actions">
               <button class="small-action" id="exportSpendButton" type="button">엑셀 다운</button>
@@ -96,7 +97,10 @@
               <output id="heldResult" class="held-result"></output>
             </div>
           </div>
+        </section>
 
+        <!-- 카드 2 · 환율 & 환전 이득 (접이식) -->
+        <section class="panel spend-card">
           <details class="fx-panel">
             <summary class="fx-panel__summary">환율 &amp; 환전 이득 계산 <span class="fx-panel__sub">적용 환율 · 은행 우대 · 사설환전소 · 경로 비교</span></summary>
             <div class="fx-panel__body">
@@ -167,19 +171,31 @@
               <div id="exchangeAdvice"></div>
             </div>
           </details>
+        </section>
 
+        <!-- 카드 3 · 숙박 -->
+        <section class="panel spend-card">
           <div class="spend-subtitle">
             <h3 class="spend-heading">숙박</h3>
             <button class="small-action" id="addLodgingButton" type="button">추가</button>
           </div>
           <div class="lodging-list" id="lodgingList"></div>
+        </section>
 
+        <!-- 카드 4 · 추가 지출 -->
+        <section class="panel spend-card">
           <div class="spend-subtitle">
             <h3 class="spend-heading">선결제 / 현지결제 추가 지출</h3>
             <button class="small-action" id="addSpendButton" type="button">추가</button>
           </div>
           <div class="extra-spend-list" id="extraSpendList"></div>
+        </section>
 
+        <!-- 카드 5 · 지출 합계 상세 -->
+        <section class="panel spend-card">
+          <div class="spend-subtitle">
+            <h3 class="spend-heading">지출 합계</h3>
+          </div>
           <div class="golf-ref-table" id="spendBreakdown"></div>
           <p class="memo-hint">총액: 일정+숙박(1인)+골프(1인)+기타지출 합계. 환전금액: 총액에서 선결제 제외.</p>
         </section>
@@ -244,7 +260,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=9"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

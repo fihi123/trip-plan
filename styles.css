@@ -1189,6 +1189,33 @@ body.saved-mode .segments {
   }
 }
 
+/* === 지출 탭: 그룹별 독립 카드 + 여백 (정보 세분화) === */
+/* 요약 · 환율 · 숙박 · 추가지출 · 합계를 각각 독립 .panel 카드로 분리하고
+   카드 사이에 숨 쉴 여백을 준다 (Apple whitespace). */
+.spend-view > .panel + .panel {
+  margin-top: 20px;
+}
+
+/* 카드 첫 소제목은 위 여백 제거 — 카드 상단에 붙인다 */
+.spend-view .panel > .spend-subtitle:first-child {
+  margin-top: 0;
+}
+
+/* 요약 강조 박스는 카드의 마지막 요소이므로 아래 여백 제거 */
+.spend-card--summary .budget-box {
+  margin-bottom: 0;
+}
+
+/* 환율 카드: 접이식 패널이 카드 상단을 채우도록 자체 구분선/여백 제거 */
+.spend-view .panel > .fx-panel {
+  margin-top: 0;
+  border-top: 0;
+}
+
+.spend-view .panel > .fx-panel > summary {
+  padding-top: 2px;
+}
+
 /* 지출 전체 합계 — 한 줄 바 */
 /* 상단 통합 박스: 전체 지출 · 환전할 금액 · 보유 외화 · 추가 환전 */
 /* 글자 크기 통일(fs-sm), 각 항목 한 줄, 컴팩트 */
