@@ -1173,10 +1173,16 @@ body.saved-mode .segments {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  margin-top: 24px;
+}
+
+/* fx-panel 안 첫 소제목(적용 환율)은 위 여백 없이 */
+.fx-panel__body > .spend-subtitle:first-child {
+  margin-top: 4px;
 }
 
 .spend-heading {
-  margin: 18px 0 8px;
+  margin: 18px 0 10px;
   font-size: var(--fs-md);
   font-weight: 900;
   color: var(--blue);
@@ -1191,7 +1197,6 @@ body.saved-mode .segments {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 10px;
   margin-bottom: 8px;
 }
 
@@ -1482,9 +1487,9 @@ body.saved-mode .segments {
 }
 
 .advice-tag--good {
-  color: #fff;
-  background: var(--teal);
-  border-color: var(--teal);
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: var(--success-border);
 }
 
 .advice-verdict {
