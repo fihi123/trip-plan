@@ -122,9 +122,19 @@
           <div class="exchange-advice">
             <div class="spend-subtitle">
               <h3 class="spend-heading">환전 이득 계산</h3>
-              <label class="inline-field exchange-advice__input">
-                <span>사설환전소 $→₱ (페소/달러)</span>
-                <input id="changerPhpUsd" inputmode="decimal" aria-label="사설환전소 달러당 페소" placeholder="예: 57.5" />
+            </div>
+            <div class="rates-section changer-rates" aria-label="사설환전소 환율">
+              <label class="inline-field">
+                <span>사설 ₱→₩ (원/페소)</span>
+                <input id="changerPhpKrw" inputmode="decimal" aria-label="사설 페소당 원화" />
+              </label>
+              <label class="inline-field">
+                <span>사설 $→₩ (원/달러)</span>
+                <input id="changerKrwUsd" inputmode="decimal" aria-label="사설 달러당 원화" />
+              </label>
+              <label class="inline-field">
+                <span>사설 $→₱ (페소/달러)</span>
+                <input id="changerPhpUsd" inputmode="decimal" aria-label="사설 달러당 페소" placeholder="예: 57.5" />
               </label>
             </div>
             <div id="exchangeAdvice"></div>

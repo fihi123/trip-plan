@@ -5,7 +5,8 @@
 //   현찰 살 때 = 매매기준율 × (1 + 스프레드% × (1 − 우대%)). 자동 갱신 시 원/달러·원/페소에 적용.
 // 지출 탭에서 직접 입력하거나 자동 갱신.
 const defaultRates = {
-  phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06, changerPhpPerUsd: 0,
+  phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06,
+  changerPhpToKrw: 0, changerKrwPerUsd: 0, changerPhpPerUsd: 0,
   usdSpread: 1.75, usdPref: 90, phpSpread: 10, phpPref: 20,
   updatedAt: "",
 };
@@ -221,6 +222,8 @@ function loadRates() {
     ? Number(stored.phpPerUsd)
     : (legacyPhpToUsd > 0 ? 1 / legacyPhpToUsd : defaultRates.phpPerUsd);
   const krwPerUsd = Number(stored.krwPerUsd) > 0 ? Number(stored.krwPerUsd) : phpToKrw * phpPerUsd;
+  const changerPhpToKrw = Number(stored.changerPhpToKrw) > 0 ? Number(stored.changerPhpToKrw) : 0;
+  const changerKrwPerUsd = Number(stored.changerKrwPerUsd) > 0 ? Number(stored.changerKrwPerUsd) : 0;
   const changerPhpPerUsd = Number(stored.changerPhpPerUsd) > 0 ? Number(stored.changerPhpPerUsd) : 0;
   // 스프레드·우대율은 0 이상 유효값이면 그대로, 아니면 기본값
   const pct = (value, fallback) => {
@@ -231,6 +234,8 @@ function loadRates() {
     phpToKrw,
     phpPerUsd,
     krwPerUsd,
+    changerPhpToKrw,
+    changerKrwPerUsd,
     changerPhpPerUsd,
     usdSpread: pct(stored.usdSpread, defaultRates.usdSpread),
     usdPref: pct(stored.usdPref, defaultRates.usdPref),
@@ -288,6 +293,8 @@ const memoField = document.querySelector("#memoNotes");
 const ratePhpKrw = document.querySelector("#ratePhpKrw");
 const rateKrwUsd = document.querySelector("#rateKrwUsd");
 const ratePhpUsd = document.querySelector("#ratePhpUsd");
+const changerPhpKrw = document.querySelector("#changerPhpKrw");
+const changerKrwUsd = document.querySelector("#changerKrwUsd");
 const changerPhpUsd = document.querySelector("#changerPhpUsd");
 const usdSpreadInput = document.querySelector("#usdSpread");
 const usdPrefInput = document.querySelector("#usdPref");
@@ -783,72 +790,75 @@ function renderSpend() {
   renderExchangeAdvice();
 }
 
-// === 환전 이득 계산 (자동갱신 시세 vs 사설환전소 / 직접 vs 달러경유) ===
+// === 환전 이득 계산 (자동갱신 vs 사설환전소 · 환율 3종 비교 + 경로별 최저비용) ===
 function renderExchangeAdvice() {
   if (!exchangeAdvice) return;
   const pesos = spendItems()
     .filter((item) => !item.prepaid)
     .reduce((sum, item) => sum + item.amount, 0); // 환전할 금액 (페소)
-  const phpToKrw = Number(rates.phpToKrw) || 0;        // 원/페소 (직접)
-  const krwPerUsd = Number(rates.krwPerUsd) || 0;      // 원/달러
-  const market = Number(rates.phpPerUsd) || 0;         // 자동갱신 시세 페소/달러
-  const changer = Number(rates.changerPhpPerUsd) || 0; // 사설환전소 페소/달러
+  const num = (v) => (Number(v) > 0 ? Number(v) : 0);
+  const o = { phpKrw: num(rates.phpToKrw), krwUsd: num(rates.krwPerUsd), phpUsd: num(rates.phpPerUsd) };        // 자동갱신
+  const c = { phpKrw: num(rates.changerPhpToKrw), krwUsd: num(rates.changerKrwPerUsd), phpUsd: num(rates.changerPhpPerUsd) }; // 사설
   const won = (v) => `₩${Math.round(v).toLocaleString("ko-KR")}`;
   const peso = (v) => `₱${Math.round(v).toLocaleString("ko-KR")}`;
   const usd = (v) => `$${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 
-  // --- 1) 환율 비교: 자동갱신 시세 vs 사설환전소 (달러당 페소) ---
-  let rateBlock;
-  if (market > 0 && changer > 0) {
-    const diff = changer - market;               // +면 사설이 페소를 더 줌(이득)
-    const usdNeed = pesos > 0 ? pesos / changer : 0;
-    const extraPeso = diff * usdNeed;
-    const good = diff > 0;
-    rateBlock = `
-      <div class="advice-card ${diff === 0 ? "" : good ? "advice-card--good" : "advice-card--bad"}">
-        <span class="advice-card__label">환율 비교 · 달러당 페소</span>
-        <div class="advice-row"><span>자동갱신 시세</span><strong>₱${market.toFixed(2)} / $</strong></div>
-        <div class="advice-row"><span>사설환전소</span><strong>₱${changer.toFixed(2)} / $</strong></div>
-        <p class="advice-verdict">${diff === 0
-          ? "두 곳 환율이 같습니다."
-          : `사설환전소가 시세보다 달러당 <strong>${peso(Math.abs(diff))}</strong> ${good ? "더 줍니다" : "덜 줍니다"}` +
-            (usdNeed > 0 ? ` · 필요한 ${usd(usdNeed)} 환전 시 시세 대비 <strong>${good ? "+" : "−"}${peso(Math.abs(extraPeso))}</strong>` : "")}
-        </p>
-      </div>`;
-  } else {
-    rateBlock = `
-      <div class="advice-card">
-        <span class="advice-card__label">환율 비교 · 달러당 페소</span>
-        <p class="advice-verdict">자동갱신 시세($→₱)와 사설환전소 값을 모두 입력하면 비교됩니다.</p>
-      </div>`;
-  }
+  // --- 1) 환율 비교: 자동갱신 vs 사설 (3종) ---
+  const rateDefs = [
+    { key: "phpKrw", label: "₱→₩ 원/페소", dp: 2, lowerBetter: true },
+    { key: "krwUsd", label: "$→₩ 원/달러", dp: 1, lowerBetter: true },
+    { key: "phpUsd", label: "$→₱ 페소/달러", dp: 2, lowerBetter: false },
+  ];
+  const rateRows = rateDefs.map((d) => {
+    const ov = o[d.key];
+    const cv = c[d.key];
+    const fmt = (x) => (x > 0 ? x.toFixed(d.dp) : "—");
+    let tag = "";
+    if (ov > 0 && cv > 0) {
+      if (Math.abs(cv - ov) < 1e-9) tag = `<span class="advice-tag">동일</span>`;
+      else {
+        const changerBetter = d.lowerBetter ? cv < ov : cv > ov;
+        tag = `<span class="advice-tag ${changerBetter ? "advice-tag--good" : ""}">${changerBetter ? "사설 유리" : "자동 유리"}</span>`;
+      }
+    }
+    return `<div class="advice-row advice-row--tri"><span>${d.label}</span><span class="advice-row__mid">자동 ${fmt(ov)} · 사설 ${fmt(cv)}</span>${tag}</div>`;
+  }).join("");
+  const rateBlock = `
+    <div class="advice-card">
+      <span class="advice-card__label">환율 비교 · 자동갱신 vs 사설</span>
+      ${rateRows}
+      <p class="advice-verdict">원/페소·원/달러는 낮을수록, 페소/달러는 높을수록 유리합니다.</p>
+    </div>`;
 
-  // --- 2) 경로 비교: 원→페소 직접 vs 원→달러→사설환전소 페소 ---
+  // --- 2) 경로 비교: 환전할 금액을 확보하는 방법별 원화 비용 (최저 강조) ---
   let routeBlock;
-  if (pesos > 0 && phpToKrw > 0 && krwPerUsd > 0 && changer > 0) {
-    const costDirect = pesos * phpToKrw;      // 원→페소 직접
-    const usdVia = pesos / changer;           // 사설환전소에서 필요한 달러
-    const costVia = usdVia * krwPerUsd;       // 원→달러→사설 페소
-    const gap = costDirect - costVia;         // +면 달러 경유가 원화 덜 듦(이득)
-    const better = gap > 0 ? "달러 사서 사설환전소" : gap < 0 ? "원화로 직접" : "";
-    const pct = Math.max(costDirect, costVia) > 0
-      ? (Math.abs(gap) / Math.max(costDirect, costVia) * 100).toFixed(1)
-      : "0.0";
+  const routes = pesos > 0 ? [
+    { label: "원→페소 직접 · 자동갱신", cost: o.phpKrw > 0 ? pesos * o.phpKrw : null },
+    { label: "원→페소 직접 · 사설", cost: c.phpKrw > 0 ? pesos * c.phpKrw : null },
+    { label: "원→달러(자동)→페소(사설)", cost: o.krwUsd > 0 && c.phpUsd > 0 ? (pesos / c.phpUsd) * o.krwUsd : null },
+    { label: "원→달러(사설)→페소(사설)", cost: c.krwUsd > 0 && c.phpUsd > 0 ? (pesos / c.phpUsd) * c.krwUsd : null },
+    { label: "원→달러(자동)→페소(자동)", cost: o.krwUsd > 0 && o.phpUsd > 0 ? (pesos / o.phpUsd) * o.krwUsd : null },
+  ].filter((r) => r.cost != null).sort((a, b) => a.cost - b.cost) : [];
+
+  if (routes.length) {
+    const min = routes[0].cost;
+    const rows = routes.map((r, i) => `
+      <div class="advice-row advice-row--tri ${i === 0 ? "advice-row--best" : ""}">
+        <span>${r.label}</span>
+        <strong class="advice-row__mid">${won(r.cost)}</strong>
+        <span>${i === 0 ? `<span class="advice-tag advice-tag--good">최저</span>` : `+${won(r.cost - min)}`}</span>
+      </div>`).join("");
     routeBlock = `
-      <div class="advice-card ${gap === 0 ? "" : "advice-card--good"}">
+      <div class="advice-card advice-card--good">
         <span class="advice-card__label">경로 비교 · 환전할 금액 ${peso(pesos)}</span>
-        <div class="advice-row"><span>A. 원→페소 직접</span><strong>${won(costDirect)}</strong></div>
-        <div class="advice-row"><span>B. 원→달러→사설페소</span><strong>${won(costVia)}</strong></div>
-        <p class="advice-verdict">${gap === 0
-          ? "두 경로 비용이 같습니다."
-          : `<strong>${better}</strong>가 <strong>${won(Math.abs(gap))}</strong> (${pct}%) 이득 · 달러 ${usd(usdVia)} 필요`}
-        </p>
+        ${rows}
+        <p class="advice-verdict">가장 싼 방법: <strong>${routes[0].label}</strong> · ${won(min)}</p>
       </div>`;
   } else {
     routeBlock = `
       <div class="advice-card">
         <span class="advice-card__label">경로 비교</span>
-        <p class="advice-verdict">환전할 금액과 원/페소·원/달러·사설환전소 환율이 있어야 계산됩니다.</p>
+        <p class="advice-verdict">환전할 금액과 자동갱신·사설 환율을 입력하면 경로별 원화 비용을 비교합니다.</p>
       </div>`;
   }
 
@@ -897,9 +907,12 @@ function renderRates() {
   if (document.activeElement !== ratePhpKrw) ratePhpKrw.value = Number(rates.phpToKrw).toFixed(2);
   if (document.activeElement !== rateKrwUsd) rateKrwUsd.value = Number(rates.krwPerUsd).toFixed(2);
   if (document.activeElement !== ratePhpUsd) ratePhpUsd.value = Number(rates.phpPerUsd).toFixed(2);
-  if (changerPhpUsd && document.activeElement !== changerPhpUsd) {
-    changerPhpUsd.value = rates.changerPhpPerUsd > 0 ? Number(rates.changerPhpPerUsd).toFixed(2) : "";
-  }
+  const setChanger = (el, value) => {
+    if (el && document.activeElement !== el) el.value = value > 0 ? Number(value).toFixed(2) : "";
+  };
+  setChanger(changerPhpKrw, rates.changerPhpToKrw);
+  setChanger(changerKrwUsd, rates.changerKrwPerUsd);
+  setChanger(changerPhpUsd, rates.changerPhpPerUsd);
   const setPct = (el, value) => {
     if (el && document.activeElement !== el) el.value = String(value);
   };
@@ -2119,14 +2132,20 @@ ratePhpUsd.addEventListener("input", () => {
   renderGolf();
 });
 
-if (changerPhpUsd) {
-  changerPhpUsd.addEventListener("input", () => {
-    const value = Number(changerPhpUsd.value);
-    rates.changerPhpPerUsd = value > 0 ? value : 0;
+// 사설환전소 환율 3종 (원/페소·원/달러·페소/달러) — 직접 입력, 자동 갱신 대상 아님
+[
+  [changerPhpKrw, "changerPhpToKrw"],
+  [changerKrwUsd, "changerKrwPerUsd"],
+  [changerPhpUsd, "changerPhpPerUsd"],
+].forEach(([el, key]) => {
+  if (!el) return;
+  el.addEventListener("input", () => {
+    const value = Number(el.value);
+    rates[key] = value > 0 ? value : 0;
     saveRates();
     renderExchangeAdvice();
   });
-}
+});
 
 // 은행 현찰 우대 설정 — 저장만 하고, 값은 다음 "환율 자동 갱신" 때 반영
 [
