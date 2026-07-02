@@ -1189,15 +1189,26 @@ body.saved-mode .segments {
   }
 }
 
-/* === 지출 탭: 그룹별 독립 카드 + 여백 (정보 세분화) === */
-/* 요약 · 환율 · 숙박 · 추가지출 · 합계를 각각 독립 .panel 카드로 분리하고
-   카드 사이에 숨 쉴 여백을 준다 (Apple whitespace). */
-.spend-view > .panel + .panel {
+/* === 지출·골프 탭: 그룹별 독립 카드 + 여백 (정보 세분화) === */
+/* 각 정보 그룹을 독립 .panel 카드로 분리하고 카드 사이에 숨 쉴 여백을 준다
+   (Apple whitespace). 지출: 요약·환율·숙박·추가지출·합계 / 골프: 설정·라운드·요약·요금표 */
+.spend-view > .panel + .panel,
+.golf-view > .panel + .panel {
   margin-top: 20px;
 }
 
 /* 카드 첫 소제목은 위 여백 제거 — 카드 상단에 붙인다 */
-.spend-view .panel > .spend-subtitle:first-child {
+.spend-view .panel > .spend-subtitle:first-child,
+.golf-view .panel > .spend-subtitle:first-child {
+  margin-top: 0;
+}
+
+/* 골프 카드 내부 여백 정리: 요약은 소제목 바로 아래로, 요금표는 카드 상단에 */
+.golf-view .panel > .golf-summary {
+  margin-top: 8px;
+}
+
+.golf-view .panel > .golf-ref {
   margin-top: 0;
 }
 

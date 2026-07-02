@@ -6,8 +6,8 @@
     <title>클락(앙헬레스) 여행 플래너</title>
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
-    <link rel="stylesheet" href="design-system/tokens.css?v=9" />
-    <link rel="stylesheet" href="styles.css?v=9" />
+    <link rel="stylesheet" href="design-system/tokens.css?v=10" />
+    <link rel="stylesheet" href="styles.css?v=10" />
   </head>
   <body>
     <header class="hero">
@@ -202,14 +202,12 @@
       </section>
 
       <section class="golf-view is-hidden" aria-label="골프 비용 계산기">
-        <section class="panel">
+        <!-- 카드 1 · 설정 (인원수) -->
+        <section class="panel spend-card">
           <div class="section-title">
             <div>
               <p class="eyebrow">Golf</p>
               <h2 id="golfTitle">골프 비용 계산기</h2>
-            </div>
-            <div class="section-actions">
-              <button class="small-action" id="addRoundButton" type="button">라운드 추가</button>
             </div>
           </div>
           <div class="golf-settings">
@@ -223,8 +221,27 @@
             </label>
             <span class="rates__hint">환율은 지출 탭에서 설정합니다.</span>
           </div>
+        </section>
+
+        <!-- 카드 2 · 라운드 -->
+        <section class="panel spend-card">
+          <div class="spend-subtitle">
+            <h3 class="spend-heading">라운드</h3>
+            <button class="small-action" id="addRoundButton" type="button">라운드 추가</button>
+          </div>
           <div class="golf-rounds" id="golfRounds"></div>
+        </section>
+
+        <!-- 카드 3 · 1인 비용 요약 -->
+        <section class="panel spend-card">
+          <div class="spend-subtitle">
+            <h3 class="spend-heading">1인 비용 요약</h3>
+          </div>
           <div class="golf-summary" id="golfSummary"></div>
+        </section>
+
+        <!-- 카드 4 · 골프장 요금표 (접이식) -->
+        <section class="panel spend-card">
           <details class="golf-ref">
             <summary>골프장 요금표 보기</summary>
             <div class="golf-ref-table" id="golfRefTable"></div>
@@ -260,7 +277,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=10"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
