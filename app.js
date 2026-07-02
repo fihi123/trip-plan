@@ -111,6 +111,13 @@ const firebaseConfig = {
   appId: "1:700766072620:web:b91b33d5756cbe1bde8689",
   measurementId: "G-9QWWP9JBSL",
 };
+// === 여정서 AI 인식(Gemini) 프록시 엔드포인트 ===
+// 여정서 양식은 항공사·여행사마다 제각각이라 정규식만으로는 한계가 있어, Firebase Function을
+// 거쳐 Gemini로 텍스트를 구조화한다. 아래에 배포된 함수 URL을 넣으면 AI 인식이 켜지고,
+// 비워 두면 자동으로 기존 정규식 파서만 사용한다(오프라인 폴백). 설정은 여정AI설정.md 참고.
+// 예: "https://asia-northeast3-trip-plan-4b079.cloudfunctions.net/parseItinerary"
+const AI_PARSE_ENDPOINT = "";
+
 const FIRESTORE_ROOT = "trip_groups";
 const FIRESTORE_COLLECTION = "saved_trips";
 // 기본 저장 위치를 클라우드로 한다: 공유 코드를 따로 설정하지 않으면 이 기본 그룹을 쓴다.
@@ -1808,13 +1815,73 @@ function parseItinerary(text) {
   return { startDate, endDate, days, nights: Math.max(0, days - 1), flights, airfareKrw };
 }
 
+// Gemini 프록시(AI_PARSE_ENDPOINT)가 돌려준 JSON을 parseItinerary()와 같은 모양으로 정돈한다.
+// 값이 이상하거나 항공편/날짜가 하나도 없으면 null을 반환해 정규식 폴백으로 넘긴다.
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function normalizeAiItinerary(data) {
+  if (!data || !Array.isArray(data.flights)) return null;
+  const flights = data.flights
+    .filter((flight) => flight && ISO_DATE_RE.test(String(flight.dateIso || "")))
+    .map((flight) => {
+      const off = String(flight.off || "").trim();
+      return {
+        flightNo: String(flight.flightNo || "").trim(),
+        dateIso: flight.dateIso,
+        dep: String(flight.dep || "").trim(),
+        arr: String(flight.arr || "").trim(),
+        off: /^\+?\d$/.test(off) ? (off.startsWith("+") ? off : `+${off}`) : "",
+        route: String(flight.route || "").replace(/-+>|=>/g, "→").trim(),
+      };
+    });
+
+  const dates = flights.map((flight) => flight.dateIso);
+  const startOk = ISO_DATE_RE.test(String(data.startDate || ""));
+  const endOk = ISO_DATE_RE.test(String(data.endDate || ""));
+  if (startOk) dates.push(data.startDate);
+  if (endOk) dates.push(data.endDate);
+  if (!dates.length) return null;
+
+  const sorted = [...dates].sort();
+  const startDate = startOk ? data.startDate : sorted[0];
+  const endDate = endOk ? data.endDate : sorted[sorted.length - 1];
+  const days = Math.max(1, Math.min(60, isoDiffDays(startDate, endDate) + 1));
+  const airfareKrw = Number(data.airfareKrw) > 0 ? Math.round(Number(data.airfareKrw)) : 0;
+  return { startDate, endDate, days, nights: Math.max(0, days - 1), flights, airfareKrw };
+}
+
+// 추출한 여정서 텍스트를 프록시로 보내 AI로 구조화한다. 엔드포인트 미설정이면 null(→ 정규식 폴백),
+// 호출 실패는 throw 해서 호출부가 폴백을 타도록 한다.
+async function parseItineraryViaAi(text) {
+  if (!AI_PARSE_ENDPOINT) return null;
+  const res = await fetch(AI_PARSE_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: text.slice(0, 20000) }),
+  });
+  if (!res.ok) throw new Error(`AI ${res.status}`);
+  return normalizeAiItinerary(await res.json());
+}
+
 async function importItineraryPdf(file) {
   importPdfButton.disabled = true;
   const original = importPdfButton.textContent;
   importPdfButton.textContent = "인식 중…";
   try {
     const text = await extractPdfText(file);
-    const result = parseItinerary(text);
+    // 1순위: AI 인식(양식 무관). 실패하면 2순위: 기존 정규식 파서(오프라인 폴백).
+    let result = null;
+    let usedAi = false;
+    try {
+      importPdfButton.textContent = "AI 인식 중…";
+      result = await parseItineraryViaAi(text);
+      if (result) usedAi = true;
+    } catch (error) {
+      console.log("AI 여정 인식 실패 → 정규식 폴백:", error);
+    }
+    if (!result) {
+      importPdfButton.textContent = "인식 중…";
+      result = parseItinerary(text);
+    }
     if (!result) {
       alert("여정에서 날짜를 찾지 못했습니다. 텍스트 기반 PDF(전자항공권)인지 확인하거나 기간을 직접 입력해 주세요.");
       return;
@@ -1824,7 +1891,7 @@ async function importItineraryPdf(file) {
     );
     const airfarePhp = result.airfareKrw && rates.phpToKrw > 0 ? Math.round(result.airfareKrw / rates.phpToKrw) : 0;
     const ok = confirm(
-      `여정 인식 결과\n` +
+      `여정 인식 결과 (${usedAi ? "AI" : "기본"} 인식)\n` +
       `출국: ${result.startDate} (${isoDowKr(result.startDate)})\n` +
       `귀국: ${result.endDate} (${isoDowKr(result.endDate)})\n` +
       `→ ${result.nights}박 ${result.days}일\n` +

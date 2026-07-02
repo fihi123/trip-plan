@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "source": "functions"
+  },
   "hosting": {
     "site": "trip-plan-4b079",
     "public": ".",
@@ -6,9 +9,11 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
+      "functions/**",
       "src/**",
       "작업내역.md",
       "클라우드설정.md",
+      "여정AI설정.md",
       "*.xlsx",
       "*.pdf",
       "*.backup"

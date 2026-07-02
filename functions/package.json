@@ -1,0 +1,12 @@
+{
+  "name": "trip-functions",
+  "description": "여정서 AI 인식 프록시 (Gemini)",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-functions": "^5.1.0"
+  },
+  "private": true
+}
