@@ -343,6 +343,7 @@ const phpSpreadInput = document.querySelector("#phpSpread");
 const phpPrefInput = document.querySelector("#phpPref");
 const heldPhpInput = document.querySelector("#heldPhp");
 const heldUsdInput = document.querySelector("#heldUsd");
+const heldResult = document.querySelector("#heldResult");
 const fetchRatesButton = document.querySelector("#fetchRatesButton");
 const ratesUpdated = document.querySelector("#ratesUpdated");
 const exchangeAdvice = document.querySelector("#exchangeAdvice");
@@ -823,16 +824,6 @@ function renderSpend() {
   const held = heldInPhp();
   const additional = Math.max(0, exchange - held.php);
 
-  const heldRow = held.php > 0 ? `
-    <div class="spend-total-bar__item">
-      <span class="spend-total-bar__label">이미 보유 (차감)</span>
-      <span class="spend-total-bar__amounts">${held.parts.join(" + ")} ≈ ${phpText(held.php)}</span>
-    </div>
-    <div class="spend-total-bar__item spend-total-bar__item--accent">
-      <span class="spend-total-bar__label">추가로 환전할 금액</span>
-      <span class="spend-total-bar__amounts"><strong>${phpText(additional)}</strong> · ${krwText(additional)} · ${usdText(additional)}</span>
-    </div>` : "";
-
   spendSummary.innerHTML = `
     <div class="spend-total-bar__item">
       <span class="spend-total-bar__label">전체 예상 지출 (선결제 포함)</span>
@@ -842,8 +833,20 @@ function renderSpend() {
       <span class="spend-total-bar__label">환전할 금액 (선결제 제외)</span>
       <span class="spend-total-bar__amounts"><strong>${phpText(exchange)}</strong> · ${krwText(exchange)} · ${usdText(exchange)}</span>
     </div>
-    ${heldRow}
   `;
+
+  // 이미 보유(차감) → 추가로 환전할 금액: 보유 외화 입력칸 바로 아래에 표시
+  if (heldResult) {
+    heldResult.innerHTML = held.php > 0 ? `
+      <div class="held-result__row">
+        <span class="held-result__label">이미 보유 (차감)</span>
+        <span class="held-result__value">${held.parts.join(" + ")} ≈ ${phpText(held.php)}</span>
+      </div>
+      <div class="held-result__row held-result__row--accent">
+        <span class="held-result__label">추가로 환전할 금액</span>
+        <span class="held-result__value"><strong>${phpText(additional)}</strong> · ${krwText(additional)} · ${usdText(additional)}</span>
+      </div>` : "";
+  }
 
   // 기본 분류 순서를 먼저, 그 뒤에 "기타" 직접 입력 분류를 이어 붙인다.
   const customCats = [...new Set(items.map((item) => item.category))].filter((cat) => !eventCategories.includes(cat));
@@ -1880,12 +1883,24 @@ pdfInput.addEventListener("change", (event) => {
   pdfInput.value = "";
 });
 
+// 시간 입력 자동 포맷: 숫자만 쳐도 "10:00" 형태로 콜론을 자동 삽입한다.
+// (지우는 중일 때는 건드리지 않아 백스페이스가 방해받지 않게 한다.)
+function autoFormatTime(raw) {
+  const digits = String(raw).replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, digits.length - 2)}:${digits.slice(-2)}`;
+}
+
 timeline.addEventListener("input", (event) => {
   const field = event.target.dataset.eventField;
   const card = event.target.closest(".event-card");
   if (!field || !card) return;
   const item = events.find((entry) => entry.id === card.dataset.eventId);
   if (!item) return;
+  if ((field === "start" || field === "end") && !String(event.inputType || "").startsWith("delete")) {
+    const formatted = autoFormatTime(event.target.value);
+    if (formatted !== event.target.value) event.target.value = formatted;
+  }
   const value = event.target.value;
   item[field] = field === "day" || field === "budget" ? Number(value || 0) : value;
   if (field === "start" && String(value).trim()) item.isNew = false;
@@ -2499,7 +2514,12 @@ golfRounds.addEventListener("change", (event) => {
 
 golfRounds.addEventListener("input", (event) => {
   // 일정 일차·시간은 텍스트 입력이라 입력 즉시 반영 (재렌더로 라운드 카드 자체는 건드리지 않음)
-  if (["tripDay", "time"].includes(event.target.dataset.golfField)) applyGolfRoundField(event.target);
+  const field = event.target.dataset.golfField;
+  if (field === "time" && !String(event.inputType || "").startsWith("delete")) {
+    const formatted = autoFormatTime(event.target.value);
+    if (formatted !== event.target.value) event.target.value = formatted;
+  }
+  if (["tripDay", "time"].includes(field)) applyGolfRoundField(event.target);
 });
 
 golfRounds.addEventListener("click", (event) => {

@@ -1182,6 +1182,46 @@ body.saved-mode .segments {
   color: var(--teal);
 }
 
+/* 보유 외화 입력칸 바로 아래 결과(차감 → 추가 환전 금액) */
+.held-result {
+  display: block;
+}
+
+.held-result:empty {
+  display: none;
+}
+
+.held-result__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 6px 0;
+}
+
+.held-result__row + .held-result__row {
+  border-top: 1px dashed rgba(var(--teal-rgb), 0.3);
+}
+
+.held-result__label {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 900;
+}
+
+.held-result__row--accent .held-result__label {
+  color: var(--teal);
+}
+
+.held-result__value {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.held-result__value strong {
+  color: var(--teal);
+}
+
 /* 지출 페이지 소제목 */
 .spend-subtitle {
   display: flex;
