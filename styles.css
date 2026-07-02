@@ -1193,8 +1193,16 @@ body.saved-mode .segments {
 /* 각 정보 그룹을 독립 .panel 카드로 분리하고 카드 사이에 숨 쉴 여백을 준다
    (Apple whitespace). 지출: 요약·환율·숙박·추가지출·합계 / 골프: 설정·라운드·요약·요금표 */
 .spend-view > .panel + .panel,
-.golf-view > .panel + .panel {
+.golf-view > .panel + .panel,
+.guide-view > .panel + .panel {
   margin-top: 20px;
+}
+
+/* 일정 탭: 컨트롤 카드(일차 선택 + 도구)는 하단 구분선 없이 깔끔하게 */
+.schedule-controls .section-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 /* 카드 첫 소제목은 위 여백 제거 — 카드 상단에 붙인다 */
