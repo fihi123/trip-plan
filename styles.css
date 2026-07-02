@@ -1130,24 +1130,26 @@ body.saved-mode .segments {
 
 /* 지출 전체 합계 — 한 줄 바 */
 /* 상단 통합 박스: 전체 지출 · 환전할 금액 · 보유 외화 · 추가 환전 */
+/* 글자 크기 통일(fs-sm), 각 항목 한 줄, 컴팩트 */
 .budget-box {
   margin-bottom: 16px;
-  padding: 14px 16px;
+  padding: 10px 14px;
   border: 1px solid var(--teal);
   border-radius: 10px;
   background: rgba(var(--teal-rgb), 0.07);
+  font-size: var(--fs-sm);
 }
 
 .spend-total-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 28px;
+  gap: 4px 24px;
 }
 
 /* 이미 보유한 외화 (통합 박스 내부, 구분선으로 분리) */
 .held-panel {
-  margin-top: 14px;
-  padding-top: 14px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px dashed rgba(var(--teal-rgb), 0.35);
 }
 
@@ -1155,30 +1157,43 @@ body.saved-mode .segments {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 20px;
+  gap: 6px 16px;
 }
 
 .held-panel .spend-heading {
   margin: 0;
   white-space: nowrap;
+  font-size: var(--fs-sm);
+  font-weight: 900;
 }
 
 .held-panel .held-rates {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
   margin-bottom: 0;
-  flex: 1 1 220px;
+  flex: 1 1 auto;
 }
 
 .held-panel .held-rates .inline-field {
-  flex: initial;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
   min-width: 0;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.held-panel .held-rates input {
+  width: 80px;
+  min-height: 30px;
+  padding: 3px 8px;
 }
 
 .held-panel .held-result:not(:empty) {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px dashed rgba(var(--teal-rgb), 0.35);
 }
 
@@ -1188,24 +1203,26 @@ body.saved-mode .segments {
   color: var(--muted);
 }
 
+/* 라벨: 금액 을 한 줄로 */
 .spend-total-bar__item {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1 1 240px;
+  flex-flow: row wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  flex: 1 1 260px;
 }
 
 .spend-total-bar__item + .spend-total-bar__item {
   border-left: 1px dashed rgba(var(--teal-rgb), 0.3);
-  padding-left: 28px;
+  padding-left: 24px;
 }
 
 @media (max-width: 560px) {
   .spend-total-bar__item + .spend-total-bar__item {
     border-left: none;
     padding-left: 0;
-    padding-top: 10px;
-    border-top: 1px dashed rgba(var(--teal-rgb), 0.3);
+    padding-top: 4px;
+    border-top: none;
   }
 }
 
@@ -1217,12 +1234,14 @@ body.saved-mode .segments {
 
 .spend-total-bar__amounts {
   color: var(--muted);
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
 .spend-total-bar__amounts strong {
   color: var(--teal);
-  font-size: var(--fs-xl);
+  font-size: var(--fs-sm);
+  font-weight: 800;
 }
 
 /* 추가로 환전할 금액(보유 외화 차감 후) 강조 */
@@ -1241,14 +1260,10 @@ body.saved-mode .segments {
 
 .held-result__row {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 16px;
-  padding: 6px 0;
-}
-
-.held-result__row + .held-result__row {
-  border-top: 1px dashed rgba(var(--teal-rgb), 0.3);
+  flex-flow: row wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 0;
 }
 
 .held-result__label {
@@ -1263,11 +1278,13 @@ body.saved-mode .segments {
 
 .held-result__value {
   color: var(--muted);
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
 .held-result__value strong {
   color: var(--teal);
+  font-weight: 800;
 }
 
 /* 지출 페이지 소제목 */
@@ -2170,10 +2187,6 @@ body.compact .place-name {
     overflow-wrap: anywhere;
   }
 
-  .spend-total-bar__amounts strong {
-    display: block;
-  }
-
   .lodging-card,
   .spend-item {
     grid-template-columns: 1fr !important;
@@ -2231,12 +2244,7 @@ body.compact .place-name {
   }
 
   .budget-box {
-    padding: 12px;
-  }
-
-  .spend-total-bar__amounts {
-    display: grid;
-    gap: 2px;
+    padding: 10px 12px;
   }
 }
 

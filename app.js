@@ -377,16 +377,16 @@ const backupInput = document.querySelector("#backupInput");
 
 // === 금액 표기 (페소·원·달러) ===
 function phpText(value) {
-  return `₱${Math.round(value).toLocaleString("ko-KR")}`;
+  return `₱${Math.ceil(value).toLocaleString("ko-KR")}`;
 }
 
 function krwText(value) {
-  return `₩${Math.round(value * rates.phpToKrw).toLocaleString("ko-KR")}`;
+  return `₩${Math.ceil(value * rates.phpToKrw).toLocaleString("ko-KR")}`;
 }
 
 function usdText(value) {
   const usd = rates.phpPerUsd > 0 ? value / rates.phpPerUsd : 0;
-  return `$${usd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${Math.ceil(usd).toLocaleString("en-US")}`;
 }
 
 function html(value) {
