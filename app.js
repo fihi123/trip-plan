@@ -372,6 +372,8 @@ const saveTripButton = document.querySelector("#saveTripButton");
 const openSavedButton = document.querySelector("#openSavedButton");
 const savedDialog = document.querySelector("#savedDialog");
 const savedList = document.querySelector("#savedList");
+const saveNameInput = document.querySelector("#saveNameInput");
+const saveNewButton = document.querySelector("#saveNewButton");
 const closeSavedButton = document.querySelector("#closeSavedButton");
 const cloudStatus = document.querySelector("#cloudStatus");
 const setCloudCodeButton = document.querySelector("#setCloudCodeButton");
@@ -1495,10 +1497,24 @@ async function dbDelete(id) {
   persistLocalSaved(loadLocalSaved().filter((entry) => entry.id !== id));
 }
 
-async function saveCurrentTrip() {
-  const suggested = (trip.startDate ? `${trip.startDate} ` : "") + `${trip.days}일 일정`;
-  const name = (prompt("저장할 이름을 입력하세요.", suggested) || "").trim();
-  if (!name) return;
+// 저장 이름 자동 제안 (예: "2026-08-15 5일 일정")
+function suggestedTripName() {
+  return (trip.startDate ? `${trip.startDate} ` : "") + `${trip.days}일 일정`;
+}
+
+const saveFailMessage = () =>
+  cloudOn()
+    ? "클라우드 저장에 실패했습니다. 인터넷 연결, 공유 코드, Firestore 규칙을 확인해 주세요."
+    : "로컬 저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.";
+
+// "새로 저장" — 이름칸 값으로 새 저장본을 만든다(같은 이름이 있으면 덮어쓰기 확인).
+async function saveNewTrip() {
+  const name = (saveNameInput?.value || "").trim();
+  if (!name) {
+    alert("저장할 이름을 입력해 주세요.");
+    saveNameInput?.focus();
+    return;
+  }
   const stamp = new Date().toISOString();
   const data = currentSnapshotData();
   try {
@@ -1513,7 +1529,24 @@ async function saveCurrentTrip() {
     alert(`"${name}"(으)로 저장했습니다. (${storageLabel()})`);
   } catch (error) {
     console.error(error);
-    alert(cloudOn() ? "클라우드 저장에 실패했습니다. 인터넷 연결, 공유 코드, Firestore 규칙을 확인해 주세요." : "로컬 저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.");
+    alert(saveFailMessage());
+  }
+}
+
+// 목록의 특정 저장본에 현재 화면 내용을 덮어쓴다(이름은 유지).
+async function overwriteTripSnapshot(id) {
+  const item = savedCache.find((entry) => entry.id === id);
+  if (!item) return;
+  if (!confirm(`"${item.name}" 저장본을 현재 화면 내용으로 덮어쓸까요?`)) return;
+  const stamp = new Date().toISOString();
+  const data = currentSnapshotData();
+  try {
+    await dbUpdate(id, { data, savedAt: stamp });
+    await renderSavedList();
+    alert(`"${item.name}"에 덮어썼습니다. (${storageLabel()})`);
+  } catch (error) {
+    console.error(error);
+    alert(saveFailMessage());
   }
 }
 
@@ -1588,6 +1621,7 @@ async function renderSavedList() {
           <span class="meta">${html(when)} · ${where}</span>
         </div>
         <div class="saved-item__actions">
+          <button class="small-action is-primary" type="button" data-saved-action="overwrite">덮어쓰기</button>
           <button class="small-action" type="button" data-saved-action="load">불러오기</button>
           <button class="small-action" type="button" data-saved-action="rename">이름변경</button>
           <button class="small-action is-danger" type="button" data-saved-action="delete">삭제</button>
@@ -1598,6 +1632,7 @@ async function renderSavedList() {
 }
 
 function openSavedDialog() {
+  if (saveNameInput) saveNameInput.value = suggestedTripName();
   renderCloudStatus();
   renderSavedList();
   if (typeof savedDialog.showModal === "function") savedDialog.showModal();
@@ -2634,9 +2669,13 @@ golfRefTable.addEventListener("click", (event) => {
   renderGolfLinked();
 });
 
-saveTripButton.addEventListener("click", saveCurrentTrip);
+saveTripButton.addEventListener("click", openSavedDialog);
 openSavedButton.addEventListener("click", openSavedDialog);
 closeSavedButton.addEventListener("click", () => savedDialog.close());
+saveNewButton?.addEventListener("click", saveNewTrip);
+saveNameInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") { event.preventDefault(); saveNewTrip(); }
+});
 setCloudCodeButton?.addEventListener("click", setCloudCode);
 clearCloudCodeButton?.addEventListener("click", clearCloudCode);
 // 백드롭(다이얼로그 바깥) 클릭 시 닫기
@@ -2649,7 +2688,8 @@ savedList.addEventListener("click", (event) => {
   const id = button.closest(".saved-item")?.dataset.id;
   if (!id) return;
   const action = button.dataset.savedAction;
-  if (action === "load") loadTripSnapshot(id);
+  if (action === "overwrite") overwriteTripSnapshot(id);
+  else if (action === "load") loadTripSnapshot(id);
   else if (action === "rename") renameTripSnapshot(id);
   else if (action === "delete") deleteTripSnapshot(id);
 });

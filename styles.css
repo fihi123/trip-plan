@@ -402,6 +402,38 @@ body.saved-mode .segments {
   overflow-y: auto;
 }
 
+.saved-save-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.saved-save-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--ink);
+  font: inherit;
+}
+
+.saved-save-bar .small-action {
+  white-space: nowrap;
+}
+
+.small-action.is-primary {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+
+.small-action.is-primary:hover {
+  filter: brightness(1.05);
+}
+
 .saved-cloud {
   display: flex;
   flex-wrap: wrap;
