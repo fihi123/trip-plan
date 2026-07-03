@@ -1263,6 +1263,37 @@ body.saved-mode .segments {
   border-bottom: 0;
 }
 
+/* 컨트롤 카드는 공간을 덜 차지하도록 컴팩트하게 */
+.schedule-controls {
+  padding: 14px 16px;
+}
+
+.schedule-controls > .segments {
+  margin-bottom: 10px;
+}
+
+.schedule-controls .segment {
+  height: 38px;
+}
+
+/* 도구 툴바: 제목(항목 수 포함)과 버튼을 한 줄에 세로 중앙 정렬 */
+.schedule-toolbar {
+  align-items: center;
+}
+
+.schedule-title-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--fs-md);
+  white-space: nowrap;
+}
+
+.schedule-title-inline #visibleCount {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+
 /* 카드 첫 소제목은 위 여백 제거 — 카드 상단에 붙인다 */
 .spend-view .panel > .spend-subtitle:first-child,
 .golf-view .panel > .spend-subtitle:first-child {
