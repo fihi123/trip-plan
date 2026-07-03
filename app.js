@@ -573,17 +573,11 @@ function startMinutes(event) {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
-// 시작 시간 순으로 정렬하되, 밤을 넘기는 일정(예: 21:00 출발 → 다음날 새벽)이
-// 깨지지 않도록 그날 첫 시간을 기준점으로 삼아 그보다 이른 시간은 다음날로 본다.
+// 시작 시간 순으로 정렬하되, 밤을 넘기는 일정(예: 21:00 → 다음날 새벽 01:00)이
+// 깨지지 않도록 새벽 4시 이전 시각은 전날 밤에서 이어지는 일정으로 보고 맨 뒤로 보낸다.
+// (첫 항목을 기준점으로 삼으면, 붙여넣은 날에 더 이른 시각을 새로 넣을 때 맨밑으로 밀리는 문제가 있어 고정 컷오프를 쓴다.)
+const DAY_START_CUTOFF = 4 * 60; // 04:00
 function sortDayEvents(items) {
-  let anchor = null;
-  for (const event of items) {
-    const minutes = startMinutes(event);
-    if (minutes != null) {
-      anchor = minutes;
-      break;
-    }
-  }
   let lastKey = -1;
   return items
     .map((event, index) => {
@@ -592,7 +586,7 @@ function sortDayEvents(items) {
       if (minutes == null) {
         key = event.isNew ? Number.NEGATIVE_INFINITY : lastKey;
       } else {
-        key = anchor != null && minutes < anchor ? minutes + 1440 : minutes;
+        key = minutes < DAY_START_CUTOFF ? minutes + 1440 : minutes;
         lastKey = key;
       }
       return { event, key, index };
@@ -655,6 +649,7 @@ function renderTimeline() {
         <input class="budget-edit" data-event-field="budget" inputmode="numeric" aria-label="예산" value="${html(event.budget || "")}" />
       </label>
       <button class="delete-inline delete-event" type="button" aria-label="일정 삭제">×</button>
+      ${event.isNew ? `<button class="event-done" type="button">완료 · 시간순 정렬</button>` : ""}
     `;
     timeline.append(card);
   });
@@ -1966,7 +1961,7 @@ timeline.addEventListener("input", (event) => {
   }
   const value = event.target.value;
   item[field] = field === "day" || field === "budget" ? Number(value || 0) : value;
-  if (field === "start" && String(value).trim()) item.isNew = false;
+  // 새 항목은 "완료" 버튼을 누르기 전까지 맨 위에 고정한다(편집 중 정렬로 자리가 튀지 않게).
   saveEvents();
   if (field === "category") {
     renderTimeline();
@@ -1982,6 +1977,18 @@ timeline.addEventListener("click", (event) => {
     state.view = goto.dataset.goto;
     history.replaceState(null, "", `#${state.view}`);
     renderView();
+    return;
+  }
+  const doneButton = event.target.closest(".event-done");
+  if (doneButton) {
+    const doneCard = doneButton.closest(".event-card");
+    const doneItem = events.find((entry) => entry.id === doneCard.dataset.eventId);
+    if (doneItem) {
+      doneItem.isNew = false;
+      saveEvents();
+      renderTimeline();
+      renderSpend();
+    }
     return;
   }
   const deleteButton = event.target.closest(".delete-event");

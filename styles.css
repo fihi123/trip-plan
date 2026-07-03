@@ -1137,6 +1137,32 @@ body.saved-mode .segments {
   cursor: pointer;
 }
 
+/* 새 일정 편집 중에는 맨 위 고정 → "완료"를 눌러야 시간순으로 정렬된다 */
+.event-done {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  margin-top: 2px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--teal);
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  padding: 10px;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.15s ease;
+}
+
+.event-done:active {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-done:active {
+    transform: none;
+  }
+}
+
 /* === Apple 버튼 문법: 액션은 pill, 아이콘은 원형, 누르면 scale(0.96) === */
 .small-action,
 .data-button,
