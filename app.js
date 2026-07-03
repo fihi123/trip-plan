@@ -585,8 +585,11 @@ function sortDayEvents(items) {
     .map((event, index) => {
       const minutes = startMinutes(event);
       let key;
-      if (minutes == null) {
-        key = event.isNew ? Number.NEGATIVE_INFINITY : lastKey;
+      if (event.isNew) {
+        // '완료' 버튼을 누르기 전까지는 시각을 입력해도 맨 위에 고정한다(편집 중 자리가 튀지 않게).
+        key = Number.NEGATIVE_INFINITY;
+      } else if (minutes == null) {
+        key = lastKey;
       } else {
         key = minutes < DAY_START_CUTOFF ? minutes + 1440 : minutes;
         lastKey = key;
