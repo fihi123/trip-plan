@@ -1,4 +1,4 @@
-const CACHE_NAME = 'clark-trip-v11';
+const CACHE_NAME = 'clark-trip-v12';
 const ASSETS = [
   './',
   './index.html',

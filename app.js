@@ -8,6 +8,7 @@ const defaultRates = {
   phpToKrw: 26.675, phpPerUsd: 56.497, krwPerUsd: 1507.06,
   changerPhpToKrw: 0, changerKrwPerUsd: 0, changerPhpPerUsd: 0,
   usdSpread: 1.75, usdPref: 90, phpSpread: 10, phpPref: 20,
+  crossFee: 0, // 이종통화 수수료(%): 달러↔페소 환전 시 떼는 마진. 경로 비교의 $→₱ 구간에 적용.
   heldUsd: 0, heldPhp: 0, // 이미 보유한 달러·페소(추가 환전액 계산에 차감)
   updatedAt: "",
 };
@@ -290,6 +291,7 @@ function loadRates() {
     usdPref: pct(stored.usdPref, defaultRates.usdPref),
     phpSpread: pct(stored.phpSpread, defaultRates.phpSpread),
     phpPref: pct(stored.phpPref, defaultRates.phpPref),
+    crossFee: pct(stored.crossFee, defaultRates.crossFee),
     updatedAt: typeof stored.updatedAt === "string" ? stored.updatedAt : "",
   };
 }
@@ -349,6 +351,7 @@ const usdSpreadInput = document.querySelector("#usdSpread");
 const usdPrefInput = document.querySelector("#usdPref");
 const phpSpreadInput = document.querySelector("#phpSpread");
 const phpPrefInput = document.querySelector("#phpPref");
+const crossFeeInput = document.querySelector("#crossFee");
 const heldPhpInput = document.querySelector("#heldPhp");
 const heldUsdInput = document.querySelector("#heldUsd");
 const heldResult = document.querySelector("#heldResult");
@@ -1024,12 +1027,18 @@ function renderExchangeAdvice() {
 
   // --- 2) 경로 비교: 환전할 금액을 확보하는 방법별 원화 비용 (최저 강조) ---
   let routeBlock;
+  // 이종통화 수수료: 달러를 페소로 바꿀 때 떼는 마진(%). 실효 페소/달러가 낮아져 필요한 달러가 늘어난다.
+  // 예) 수수료 2% → 1달러로 받는 페소가 phpUsd × 0.98. 원→페소 직접 경로에는 적용 안 함.
+  const crossFee = num(rates.crossFee);
+  const feeFactor = 1 - crossFee / 100;               // 0.98 등 (0~1)
+  const oPhpUsdNet = o.phpUsd * feeFactor;             // 수수료 반영 자동갱신 페소/달러
+  const cPhpUsdNet = c.phpUsd * feeFactor;             // 수수료 반영 사설 페소/달러
   const routes = pesos > 0 ? [
     { label: "원→페소 직접 · 자동갱신", cost: o.phpKrw > 0 ? pesos * o.phpKrw : null },
     { label: "원→페소 직접 · 사설", cost: c.phpKrw > 0 ? pesos * c.phpKrw : null },
-    { label: "원→달러(자동)→페소(사설)", cost: o.krwUsd > 0 && c.phpUsd > 0 ? (pesos / c.phpUsd) * o.krwUsd : null },
-    { label: "원→달러(사설)→페소(사설)", cost: c.krwUsd > 0 && c.phpUsd > 0 ? (pesos / c.phpUsd) * c.krwUsd : null },
-    { label: "원→달러(자동)→페소(자동)", cost: o.krwUsd > 0 && o.phpUsd > 0 ? (pesos / o.phpUsd) * o.krwUsd : null },
+    { label: "원→달러(자동)→페소(사설)", cost: o.krwUsd > 0 && cPhpUsdNet > 0 ? (pesos / cPhpUsdNet) * o.krwUsd : null },
+    { label: "원→달러(사설)→페소(사설)", cost: c.krwUsd > 0 && cPhpUsdNet > 0 ? (pesos / cPhpUsdNet) * c.krwUsd : null },
+    { label: "원→달러(자동)→페소(자동)", cost: o.krwUsd > 0 && oPhpUsdNet > 0 ? (pesos / oPhpUsdNet) * o.krwUsd : null },
   ].filter((r) => r.cost != null).sort((a, b) => a.cost - b.cost) : [];
 
   if (routes.length) {
@@ -1045,6 +1054,7 @@ function renderExchangeAdvice() {
         <span class="advice-card__label">경로 비교 · ${held.php > 0 ? "추가 환전 금액" : "환전할 금액"} ${peso(pesos)}${held.php > 0 ? ` (보유 ${peso(held.php)} 차감)` : ""}</span>
         ${rows}
         <p class="advice-verdict">가장 싼 방법: <strong>${routes[0].label}</strong> · ${won(min)}</p>
+        ${crossFee > 0 ? `<p class="advice-verdict advice-verdict--sub">달러→페소 경로엔 이종통화 수수료 ${crossFee}% 반영됨.</p>` : ""}
       </div>`;
   } else if (needed > 0 && held.php >= needed) {
     routeBlock = `
@@ -1118,6 +1128,7 @@ function renderRates() {
   setPct(usdPrefInput, rates.usdPref);
   setPct(phpSpreadInput, rates.phpSpread);
   setPct(phpPrefInput, rates.phpPref);
+  setPct(crossFeeInput, rates.crossFee);
   const setHeld = (el, value) => {
     if (el && document.activeElement !== el) el.value = value > 0 ? String(value) : "";
   };
@@ -2497,6 +2508,16 @@ ratePhpUsd.addEventListener("input", () => {
     renderExchangeAdvice();
   });
 });
+
+// 이종통화 수수료(%) — 즉시 저장하고 경로 비교 다시 계산
+if (crossFeeInput) {
+  crossFeeInput.addEventListener("input", () => {
+    const n = Number(crossFeeInput.value);
+    rates.crossFee = Number.isFinite(n) && n >= 0 ? n : 0;
+    saveRates();
+    renderExchangeAdvice();
+  });
+}
 
 // 은행 현찰 우대 설정 — 저장만 하고, 값은 다음 "환율 자동 갱신" 때 반영
 [

@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="design-system/tokens.css?v=14" />
-    <link rel="stylesheet" href="styles.css?v=25" />
+    <link rel="stylesheet" href="styles.css?v=26" />
   </head>
   <body>
     <header class="hero">
@@ -166,7 +166,12 @@
                   <span>사설 $→₱ (페소/달러)</span>
                   <input id="changerPhpUsd" inputmode="decimal" aria-label="사설 달러당 페소" placeholder="예: 57.5" />
                 </label>
+                <label class="inline-field">
+                  <span>이종통화 수수료 % ($→₱)</span>
+                  <input id="crossFee" inputmode="decimal" aria-label="이종통화 환전 수수료" placeholder="예: 2" />
+                </label>
               </div>
+              <p class="bank-fx__hint">이종통화 수수료는 달러를 페소로 바꿀 때 떼는 마진입니다. <strong>원→달러→페소</strong> 경로의 페소/달러에만 적용되고, 원→페소 직접 경로엔 적용되지 않습니다.</p>
 
               <div class="spend-subtitle">
                 <h3 class="spend-heading">환전 이득 계산</h3>
@@ -307,7 +312,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=25"></script>
+    <script src="app.js?v=26"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

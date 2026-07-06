@@ -1866,6 +1866,14 @@ body.saved-mode .segments {
   color: var(--teal);
 }
 
+.advice-verdict--sub {
+  margin-top: 4px;
+  padding-top: 0;
+  border-top: 0;
+  font-size: var(--fs-xs, 12px);
+  color: var(--muted, #888);
+}
+
 @media (max-width: 760px) {
   .lodging-card {
     grid-template-columns: 1fr 1fr;
