@@ -569,8 +569,10 @@ function eventKindLabel(event) {
 }
 
 function startMinutes(event) {
-  if (!event.start) return null;
-  const match = /^(\d{1,2}):(\d{2})$/.exec(String(event.start).trim());
+  // 일반 일정은 start, 골프 라운드는 time(티오프)을 시작 시각으로 본다.
+  const raw = event.start || event.time;
+  if (!raw) return null;
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(raw).trim());
   if (!match) return null;
   return Number(match[1]) * 60 + Number(match[2]);
 }
@@ -588,6 +590,19 @@ function sortDayEvents(items) {
     .map((entry) => entry.event);
 }
 
+// 일반 일정 + 골프 라운드를 시작 시각 기준으로 함께 정렬한다.
+// items: [{ type: "event"|"golf", data }] 형태. 시각 없는 항목은 맨 뒤.
+function sortDayItems(items) {
+  return items
+    .map((item, index) => {
+      const minutes = startMinutes(item.data);
+      const key = minutes == null ? Number.POSITIVE_INFINITY : minutes;
+      return { item, key, index };
+    })
+    .sort((a, b) => a.key - b.key || a.index - b.index)
+    .map((entry) => entry.item);
+}
+
 // 저장된 events 배열 자체를 화면과 동일하게(일차 오름차순 → 시간순) 재배열한다.
 // 기존 데이터 정렬 및 내보내기 순서 일관성을 위해 사용한다.
 function normalizeEventOrder() {
@@ -602,7 +617,13 @@ function normalizeEventOrder() {
 
 // 선택한 하루의 일정만 보여준다 (전체 보기 없음).
 function renderTimeline() {
-  const items = sortDayEvents(events.filter((event) => String(event.day) === state.day));
+  const dayEvents = events.filter((event) => String(event.day) === state.day);
+  const golfForDay = golf.rounds.filter((round) => Number(round.tripDay) === Number(state.day));
+  // 일반 일정과 골프 라운드를 시작 시각(골프는 티오프)으로 함께 정렬한다.
+  const merged = sortDayItems([
+    ...dayEvents.map((data) => ({ type: "event", data })),
+    ...golfForDay.map((data) => ({ type: "golf", data })),
+  ]);
   timeline.innerHTML = "";
 
   if (trip.startDate) {
@@ -613,7 +634,26 @@ function renderTimeline() {
     timeline.append(head);
   }
 
-  items.forEach((event) => {
+  merged.forEach((item) => {
+    if (item.type === "golf") {
+      // 해당 일차에 배정된 골프 라운드 (편집은 골프 탭에서)
+      const round = item.data;
+      const breakdown = golfRoundBreakdown(round, golf.people);
+      const card = document.createElement("article");
+      card.className = "event-card golf-event";
+      card.dataset.kind = "golf";
+      card.innerHTML = `
+        <div class="event-main">
+          <div class="golf-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(round.day)}${round.time ? ` · ${html(round.time)}` : ""}</small></div>
+          <div class="meta">골프 · 1인 ${krwText(breakdown.total)} · ${usdText(breakdown.total)} · <button class="link-button" type="button" data-goto="golf">골프 탭에서 편집</button></div>
+        </div>
+        <div class="money-field golf-event__cost">${phpText(breakdown.total)}</div>
+      `;
+      timeline.append(card);
+      return;
+    }
+
+    const event = item.data;
     const card = document.createElement("article");
     card.className = "event-card";
     card.dataset.kind = eventKind(event);
@@ -658,30 +698,13 @@ function renderTimeline() {
     timeline.append(card);
   });
 
-  // 해당 일차에 배정된 골프 라운드를 자동으로 표시 (편집은 골프 탭에서)
-  const golfForDay = golf.rounds.filter((round) => Number(round.tripDay) === Number(state.day));
-  golfForDay.forEach((round) => {
-    const breakdown = golfRoundBreakdown(round, golf.people);
-    const card = document.createElement("article");
-    card.className = "event-card golf-event";
-    card.dataset.kind = "golf";
-    card.innerHTML = `
-      <div class="event-main">
-        <div class="golf-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(round.day)}${round.time ? ` · ${html(round.time)}` : ""}</small></div>
-        <div class="meta">골프 · 1인 ${krwText(breakdown.total)} · ${usdText(breakdown.total)} · <button class="link-button" type="button" data-goto="golf">골프 탭에서 편집</button></div>
-      </div>
-      <div class="money-field golf-event__cost">${phpText(breakdown.total)}</div>
-    `;
-    timeline.append(card);
-  });
-
-  if (!items.length && !golfForDay.length) {
+  if (!merged.length) {
     const empty = document.createElement("p");
     empty.className = "meta";
     empty.textContent = `${state.day}일차 일정이 없습니다. "추가"로 일정을 넣어 보세요.`;
     timeline.append(empty);
   }
-  visibleCount.value = `${items.length + golfForDay.length}개 항목`;
+  visibleCount.value = `${merged.length}개 항목`;
 }
 
 // PDF(인쇄)용: 선택한 하루가 아닌 전체 일차의 일정을 읽기 전용으로 펼쳐 담는다.
@@ -690,8 +713,13 @@ function renderPrintItinerary() {
   if (!container) return;
   let out = "";
   for (let day = 1; day <= trip.days; day += 1) {
-    const items = sortDayEvents(events.filter((event) => Number(event.day) === day));
+    const dayEvents = events.filter((event) => Number(event.day) === day);
     const golfForDay = golf.rounds.filter((round) => Number(round.tripDay) === day);
+    // 일반 일정과 골프 라운드를 시작 시각(골프는 티오프)으로 함께 정렬한다.
+    const merged = sortDayItems([
+      ...dayEvents.map((data) => ({ type: "event", data })),
+      ...golfForDay.map((data) => ({ type: "golf", data })),
+    ]);
     const headDate = trip.startDate
       ? (() => {
           const iso = isoAddDays(trip.startDate, day - 1);
@@ -699,7 +727,18 @@ function renderPrintItinerary() {
         })()
       : "";
 
-    let rows = items.map((event) => {
+    let rows = merged.map((item) => {
+      if (item.type === "golf") {
+        const round = item.data;
+        const breakdown = golfRoundBreakdown(round, golf.people);
+        const sub = [round.day, round.time, `1인 ${krwText(breakdown.total)}`].filter(Boolean).join(" · ");
+        return `
+      <article class="print-event golf-event" data-kind="golf">
+        <div class="print-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(sub)}</small></div>
+        <div class="print-event__cost">${phpText(breakdown.total)}</div>
+      </article>`;
+      }
+      const event = item.data;
       const time = [event.start, event.end].filter(Boolean).join("~");
       const sub = [time, eventCategory(event)].filter(Boolean).join(" · ");
       return `
@@ -709,17 +748,7 @@ function renderPrintItinerary() {
       </article>`;
     }).join("");
 
-    rows += golfForDay.map((round) => {
-      const breakdown = golfRoundBreakdown(round, golf.people);
-      const sub = [round.day, round.time, `1인 ${krwText(breakdown.total)}`].filter(Boolean).join(" · ");
-      return `
-      <article class="print-event golf-event" data-kind="golf">
-        <div class="print-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(sub)}</small></div>
-        <div class="print-event__cost">${phpText(breakdown.total)}</div>
-      </article>`;
-    }).join("");
-
-    if (!items.length && !golfForDay.length) {
+    if (!merged.length) {
       rows = `<p class="meta">일정 없음</p>`;
     }
 
