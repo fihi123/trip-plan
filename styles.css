@@ -1135,11 +1135,9 @@ body.saved-mode .segments {
   box-shadow: var(--ring);
 }
 
-/* 일정에 자동 표시되는 골프 카드 */
+/* 일정에 자동 표시되는 골프 카드 — 레이아웃/입력칸은 일반 일정과 동일, 색만 골드 */
 .event-card.golf-event {
-  grid-template-columns: minmax(0, 1fr) auto;
   border-left-color: var(--gold);
-  align-items: center;
 }
 
 .golf-event__title {
