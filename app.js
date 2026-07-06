@@ -597,6 +597,18 @@ function sortDayEvents(items) {
     .map((entry) => entry.event);
 }
 
+// 저장된 events 배열 자체를 화면과 동일하게(일차 오름차순 → 시간순) 재배열한다.
+// 기존 데이터 정렬 및 내보내기 순서 일관성을 위해 사용한다.
+function normalizeEventOrder() {
+  const days = [...new Set(events.map((event) => Number(event.day) || 0))].sort((a, b) => a - b);
+  const ordered = days.flatMap((day) =>
+    sortDayEvents(events.filter((event) => (Number(event.day) || 0) === day))
+  );
+  const changed = ordered.length !== events.length || ordered.some((event, i) => event !== events[i]);
+  events = ordered;
+  return changed;
+}
+
 // 선택한 하루의 일정만 보여준다 (전체 보기 없음).
 function renderTimeline() {
   const items = sortDayEvents(events.filter((event) => String(event.day) === state.day));
@@ -2721,4 +2733,6 @@ window.addEventListener("afterprint", () => {
   renderView();
 });
 
+// 기존 일정 데이터도 시간순으로 재배열해 저장(저장 순서와 화면 순서를 일치시킨다).
+if (normalizeEventOrder()) saveEvents();
 renderAll();
