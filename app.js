@@ -575,22 +575,13 @@ function startMinutes(event) {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
-// 시작 시간 순으로 정렬하되, 밤을 넘기는 일정(예: 21:00 → 다음날 새벽 01:00)이
-// 깨지지 않도록 새벽 4시 이전 시각은 전날 밤에서 이어지는 일정으로 보고 맨 뒤로 보낸다.
-// (첫 항목을 기준점으로 삼으면, 붙여넣은 날에 더 이른 시각을 새로 넣을 때 맨밑으로 밀리는 문제가 있어 고정 컷오프를 쓴다.)
-const DAY_START_CUTOFF = 4 * 60; // 04:00
+// 시작 시각 기준 순수 오름차순 정렬(기준 시각/컷오프 없음).
+// 00:00이 맨 위, 23:59가 맨 아래. 시각이 없는 항목은 맨 뒤로 보낸다.
 function sortDayEvents(items) {
-  let lastKey = -1;
   return items
     .map((event, index) => {
       const minutes = startMinutes(event);
-      let key;
-      if (minutes == null) {
-        key = lastKey;
-      } else {
-        key = minutes < DAY_START_CUTOFF ? minutes + 1440 : minutes;
-        lastKey = key;
-      }
+      const key = minutes == null ? Number.POSITIVE_INFINITY : minutes;
       return { event, key, index };
     })
     .sort((a, b) => a.key - b.key || a.index - b.index)
