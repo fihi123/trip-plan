@@ -240,6 +240,7 @@ function loadGolf() {
         day: round.day === "주중" ? "주중" : "주말",
         tripDay: Number(round.tripDay) >= 1 ? Math.round(Number(round.tripDay)) : 1,
         time: typeof round.time === "string" ? round.time : "",
+        end: typeof round.end === "string" ? round.end : "",
       }))
     : (seeded ? [] : defaultGolf.rounds.map((round) => ({ ...round })));
   // 요금표 수정값: { 골프장id: { name?, weekday?, ... } } 형태만 받아들인다.
@@ -636,18 +637,40 @@ function renderTimeline() {
 
   merged.forEach((item) => {
     if (item.type === "golf") {
-      // 해당 일차에 배정된 골프 라운드 (편집은 골프 탭에서)
+      // 해당 일차에 배정된 골프 라운드 — 일반 일정과 같은 양식.
+      // 골프장/요금은 골프 탭에서 정하고, 여기서는 시작(티오프)·종료 시각만 편집한다.
       const round = item.data;
       const breakdown = golfRoundBreakdown(round, golf.people);
       const card = document.createElement("article");
       card.className = "event-card golf-event";
       card.dataset.kind = "golf";
+      card.dataset.golfId = round.id;
       card.innerHTML = `
         <div class="event-main">
-          <div class="golf-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(round.day)}${round.time ? ` · ${html(round.time)}` : ""}</small></div>
-          <div class="meta">골프 · 1인 ${krwText(breakdown.total)} · ${usdText(breakdown.total)} · <button class="link-button" type="button" data-goto="golf">골프 탭에서 편집</button></div>
+          <div class="event-editor">
+            <label class="inline-field event-name-input">
+              <span>장소 / 내용</span>
+              <input aria-label="골프장" value="⛳ 골프 · ${html(breakdown.course.name)}" readonly />
+            </label>
+            <label class="inline-field event-time">
+              <span>시작</span>
+              <input data-golf-field="time" aria-label="티오프 시간" placeholder="06:30" value="${html(round.time || "")}" />
+            </label>
+            <label class="inline-field event-time">
+              <span>종료</span>
+              <input data-golf-field="end" aria-label="종료 시간" placeholder="11:00" value="${html(round.end || "")}" />
+            </label>
+            <label class="inline-field event-cat">
+              <span>분류</span>
+              <input aria-label="분류" value="골프 (${html(round.day)})" readonly />
+            </label>
+          </div>
         </div>
-        <div class="money-field golf-event__cost">${phpText(breakdown.total)}</div>
+        <label class="inline-field money-field">
+          <span>1인 비용(₱)</span>
+          <input class="budget-edit" aria-label="1인 골프 비용" value="${html(String(breakdown.total))}" readonly />
+        </label>
+        <button class="delete-inline" type="button" data-goto="golf" aria-label="골프 탭에서 편집" title="골프 탭에서 편집">⛳</button>
       `;
       timeline.append(card);
       return;
@@ -731,7 +754,8 @@ function renderPrintItinerary() {
       if (item.type === "golf") {
         const round = item.data;
         const breakdown = golfRoundBreakdown(round, golf.people);
-        const sub = [round.day, round.time, `1인 ${krwText(breakdown.total)}`].filter(Boolean).join(" · ");
+        const roundTime = [round.time, round.end].filter(Boolean).join("~");
+        const sub = [round.day, roundTime, `1인 ${krwText(breakdown.total)}`].filter(Boolean).join(" · ");
         return `
       <article class="print-event golf-event" data-kind="golf">
         <div class="print-event__title">⛳ 골프 · ${html(breakdown.course.name)} <small>${html(sub)}</small></div>
@@ -2016,6 +2040,21 @@ function autoFormatTime(raw) {
 }
 
 timeline.addEventListener("input", (event) => {
+  // 골프 라운드 카드의 시작(티오프)·종료 시각 편집
+  const golfField = event.target.dataset.golfField;
+  if (golfField) {
+    const golfCard = event.target.closest(".event-card");
+    const round = golf.rounds.find((entry) => entry.id === golfCard?.dataset.golfId);
+    if (!round) return;
+    if (!String(event.inputType || "").startsWith("delete")) {
+      const formatted = autoFormatTime(event.target.value);
+      if (formatted !== event.target.value) event.target.value = formatted;
+    }
+    round[golfField] = event.target.value;
+    saveGolf();
+    return;
+  }
+
   const field = event.target.dataset.eventField;
   const card = event.target.closest(".event-card");
   if (!field || !card) return;
@@ -2041,6 +2080,10 @@ timeline.addEventListener("input", (event) => {
 timeline.addEventListener("change", (event) => {
   const field = event.target.dataset.eventField;
   if (field === "start" || field === "end" || field === "day") {
+    renderTimeline();
+  }
+  // 골프 티오프 시각을 바꾸면 일정표 순서도 다시 정렬한다.
+  if (event.target.dataset.golfField === "time") {
     renderTimeline();
   }
 });
