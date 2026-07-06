@@ -430,6 +430,31 @@ body.saved-mode .segments {
   color: #fff;
 }
 
+.print-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin-top: 14px;
+}
+
+.print-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.print-options input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--teal);
+}
+
 .small-action.is-primary:hover {
   filter: brightness(1.05);
 }
@@ -2481,12 +2506,31 @@ body.compact .place-name {
     print-color-adjust: exact;
   }
 
-  /* 모든 탭 내용을 한 문서에 펼쳐 보인다 */
+  /* 선택한 탭만 출력한다 (body.print-<view> 클래스로 제어) */
   .guide-view,
   .spend-view,
   .golf-view,
   .notes-view {
+    display: none !important;
+  }
+
+  body.print-guide .guide-view,
+  body.print-spend .spend-view,
+  body.print-golf .golf-view,
+  body.print-notes .notes-view {
     display: block !important;
+  }
+
+  /* 각 탭(본문 섹션)은 새 페이지에서 시작하고, 맨 앞 섹션만 붙여둔다 */
+  main > .guide-view,
+  main > .spend-view,
+  main > .golf-view,
+  main > .notes-view {
+    break-before: page;
+  }
+
+  main > .print-first {
+    break-before: auto;
   }
 
   .golf-round,
@@ -2543,6 +2587,7 @@ body.compact .place-name {
 
   /* 편집/탐색용 UI는 PDF에서 숨긴다 */
   .topbar__tabs,
+  .trip-duration label,
   .controls,
   .segments,
   .data-tools,

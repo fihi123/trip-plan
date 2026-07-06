@@ -381,6 +381,9 @@ const setCloudCodeButton = document.querySelector("#setCloudCodeButton");
 const clearCloudCodeButton = document.querySelector("#clearCloudCodeButton");
 const resetButton = document.querySelector("#resetButton");
 const pdfButton = document.querySelector("#pdfButton");
+const printDialog = document.querySelector("#printDialog");
+const closePrintButton = document.querySelector("#closePrintButton");
+const confirmPrintButton = document.querySelector("#confirmPrintButton");
 const exportBackupButton = document.querySelector("#exportBackupButton");
 const importBackupButton = document.querySelector("#importBackupButton");
 const backupInput = document.querySelector("#backupInput");
@@ -1263,8 +1266,6 @@ function renderGolfSummary() {
       <small>${krwText(grand)} · ${usdText(grand)}</small>
     </div>
   `;
-
-  renderGolfRefTable();
 }
 
 // 요금표: 값을 직접 수정 가능. 입력은 ₱ 기준이며 수정값은 골프 데이터에 저장된다.
@@ -2688,7 +2689,14 @@ function applyGolfRoundField(target) {
 }
 
 golfRounds.addEventListener("change", (event) => {
-  if (event.target.dataset.golfField) applyGolfRoundField(event.target);
+  const field = event.target.dataset.golfField;
+  if (!field) return;
+  applyGolfRoundField(event.target);
+  // 골프장·요일은 select(값 확정 후 발생)라 라운드 카드/합계를 다시 그려도 포커스 손실이 없다.
+  if (field === "course" || field === "day") {
+    renderGolfRounds();
+    renderGolfSummary();
+  }
 });
 
 golfRounds.addEventListener("input", (event) => {
@@ -2768,7 +2776,48 @@ savedList.addEventListener("click", (event) => {
   else if (action === "delete") deleteTripSnapshot(id);
 });
 resetButton.addEventListener("click", resetData);
-pdfButton.addEventListener("click", () => window.print());
+
+// PDF/출력: 어떤 탭을 포함할지 먼저 고른다.
+const PRINT_VIEWS = ["guide", "spend", "golf", "notes"];
+pdfButton.addEventListener("click", () => {
+  // 탭 선택 창을 띄운다(체크박스 기본값은 전체 선택). dialog 미지원 브라우저는 전체 출력.
+  if (typeof printDialog.showModal === "function") printDialog.showModal();
+  else runPrint();
+});
+closePrintButton?.addEventListener("click", () => printDialog.close());
+printDialog?.addEventListener("click", (event) => {
+  if (event.target === printDialog) printDialog.close();
+});
+confirmPrintButton?.addEventListener("click", () => {
+  const selected = PRINT_VIEWS.filter(
+    (view) => printDialog.querySelector(`.print-tab-check[value="${view}"]`)?.checked
+  );
+  if (!selected.length) {
+    alert("출력할 탭을 하나 이상 선택하세요.");
+    return;
+  }
+  printDialog.close();
+  runPrint(selected);
+});
+
+// 선택한 탭에 맞춰 body 클래스를 세팅하고 인쇄를 띄운다.
+function runPrint(selected = PRINT_VIEWS) {
+  applyPrintSelection(selected);
+  window.print();
+}
+
+function applyPrintSelection(selected) {
+  PRINT_VIEWS.forEach((view) => document.body.classList.toggle(`print-${view}`, selected.includes(view)));
+  // 선택한 탭 중 첫 번째만 페이지 나눔에서 제외(맨 앞 여백 방지).
+  document.querySelectorAll("main > .print-first").forEach((el) => el.classList.remove("print-first"));
+  const first = selected[0];
+  if (first) document.querySelector(`main > .${first}-view`)?.classList.add("print-first");
+}
+
+function clearPrintSelection() {
+  PRINT_VIEWS.forEach((view) => document.body.classList.remove(`print-${view}`));
+  document.querySelectorAll("main > .print-first").forEach((el) => el.classList.remove("print-first"));
+}
 exportBackupButton?.addEventListener("click", exportBackup);
 importBackupButton?.addEventListener("click", () => backupInput?.click());
 backupInput?.addEventListener("change", (event) => {
@@ -2777,10 +2826,12 @@ backupInput?.addEventListener("change", (event) => {
   backupInput.value = "";
 });
 
-// PDF(인쇄) 시: 모든 탭 내용을 펼쳐 보이고, 메모/텍스트 칸이 잘리지 않도록 높이를 늘린다.
+// PDF(인쇄) 시: 선택한 탭을 펼쳐 보이고, 메모/텍스트 칸이 잘리지 않도록 높이를 늘린다.
 let printTextareaHeights = null;
 window.addEventListener("beforeprint", () => {
-  document.querySelectorAll(".guide-view, .spend-view, .golf-view, .notes-view").forEach((element) => element.classList.remove("is-hidden"));
+  // 브라우저 인쇄(Ctrl+P)로 바로 들어오면 선택 정보가 없으므로 전체 탭을 기본으로 한다.
+  const hasSelection = PRINT_VIEWS.some((view) => document.body.classList.contains(`print-${view}`));
+  if (!hasSelection) applyPrintSelection(PRINT_VIEWS);
   renderPrintItinerary();
   const textareas = [...document.querySelectorAll("textarea")];
   printTextareaHeights = textareas.map((field) => field.style.height);
@@ -2797,6 +2848,7 @@ window.addEventListener("afterprint", () => {
     });
   }
   printTextareaHeights = null;
+  clearPrintSelection();
   renderView();
 });
 

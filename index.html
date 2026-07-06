@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="design-system/tokens.css?v=14" />
-    <link rel="stylesheet" href="styles.css?v=24" />
+    <link rel="stylesheet" href="styles.css?v=25" />
   </head>
   <body>
     <header class="hero">
@@ -288,9 +288,26 @@
         </div>
         <div class="saved-list" id="savedList"></div>
       </dialog>
+
+      <dialog class="saved-dialog print-dialog" id="printDialog" aria-label="PDF 저장 / 출력">
+        <div class="saved-dialog__head">
+          <h2>PDF 저장 / 출력</h2>
+          <button class="delete-inline" id="closePrintButton" type="button" aria-label="닫기">×</button>
+        </div>
+        <p class="memo-hint">출력하거나 PDF로 저장할 탭을 선택하세요. 선택한 탭은 각각 새 페이지로 나뉩니다.</p>
+        <div class="print-options">
+          <label><input type="checkbox" class="print-tab-check" value="guide" checked /> 일정</label>
+          <label><input type="checkbox" class="print-tab-check" value="spend" checked /> 지출</label>
+          <label><input type="checkbox" class="print-tab-check" value="golf" checked /> 골프</label>
+          <label><input type="checkbox" class="print-tab-check" value="notes" checked /> 메모</label>
+        </div>
+        <div class="saved-save-bar">
+          <button class="small-action is-primary" id="confirmPrintButton" type="button">PDF 저장 / 출력</button>
+        </div>
+      </dialog>
     </main>
 
-    <script src="app.js?v=23"></script>
+    <script src="app.js?v=25"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
