@@ -1646,6 +1646,50 @@ body.saved-mode .segments {
   padding-top: 4px;
 }
 
+/* 지출 내용 접이식 카드(숙박 · 추가 지출 · 지출 합계) */
+.spend-collapse > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.spend-collapse > summary::-webkit-details-marker {
+  display: none;
+}
+
+.spend-collapse__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-md);
+  font-weight: 900;
+  color: var(--blue);
+}
+
+.spend-collapse__title::before {
+  content: "▸";
+  color: var(--teal);
+  font-size: 0.9em;
+}
+
+.spend-collapse[open] > summary .spend-collapse__title::before {
+  content: "▾";
+}
+
+.spend-collapse[open] > summary {
+  margin-bottom: 12px;
+}
+
+/* 접힌 카드의 '추가' 버튼은 눌러도 펼침 토글과 겹치지 않게 위에 뜨도록 */
+.spend-collapse__summary .small-action {
+  position: relative;
+  z-index: 1;
+}
+
 /* 은행 현찰 우대 설정 */
 .bank-fx {
   margin-top: 12px;

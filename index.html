@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="design-system/tokens.css?v=14" />
-    <link rel="stylesheet" href="styles.css?v=17" />
+    <link rel="stylesheet" href="styles.css?v=20" />
   </head>
   <body>
     <header class="hero">
@@ -176,31 +176,37 @@
           </details>
         </section>
 
-        <!-- 카드 3 · 숙박 -->
+        <!-- 카드 3 · 숙박 (접이식) -->
         <section class="panel spend-card">
-          <div class="spend-subtitle">
-            <h3 class="spend-heading">숙박</h3>
-            <button class="small-action" id="addLodgingButton" type="button">추가</button>
-          </div>
-          <div class="lodging-list" id="lodgingList"></div>
+          <details class="spend-collapse" open>
+            <summary class="spend-collapse__summary">
+              <span class="spend-collapse__title">숙박</span>
+              <button class="small-action" id="addLodgingButton" type="button">추가</button>
+            </summary>
+            <div class="lodging-list" id="lodgingList"></div>
+          </details>
         </section>
 
-        <!-- 카드 4 · 추가 지출 -->
+        <!-- 카드 4 · 추가 지출 (접이식) -->
         <section class="panel spend-card">
-          <div class="spend-subtitle">
-            <h3 class="spend-heading">선결제 / 현지결제 추가 지출</h3>
-            <button class="small-action" id="addSpendButton" type="button">추가</button>
-          </div>
-          <div class="extra-spend-list" id="extraSpendList"></div>
+          <details class="spend-collapse" open>
+            <summary class="spend-collapse__summary">
+              <span class="spend-collapse__title">선결제 / 현지결제 추가 지출</span>
+              <button class="small-action" id="addSpendButton" type="button">추가</button>
+            </summary>
+            <div class="extra-spend-list" id="extraSpendList"></div>
+          </details>
         </section>
 
-        <!-- 카드 5 · 지출 합계 상세 -->
+        <!-- 카드 5 · 지출 합계 상세 (접이식) -->
         <section class="panel spend-card">
-          <div class="spend-subtitle">
-            <h3 class="spend-heading">지출 합계</h3>
-          </div>
-          <div class="golf-ref-table" id="spendBreakdown"></div>
-          <p class="memo-hint">총액: 일정+숙박(1인)+골프(1인)+기타지출 합계. 환전금액: 총액에서 선결제 제외.</p>
+          <details class="spend-collapse" open>
+            <summary class="spend-collapse__summary">
+              <span class="spend-collapse__title">지출 합계</span>
+            </summary>
+            <div class="golf-ref-table" id="spendBreakdown"></div>
+            <p class="memo-hint">총액: 일정+숙박(1인)+골프(1인)+기타지출 합계. 환전금액: 총액에서 선결제 제외.</p>
+          </details>
         </section>
       </section>
 
@@ -284,7 +290,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=19"></script>
+    <script src="app.js?v=20"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

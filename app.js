@@ -2473,7 +2473,9 @@ function applyLodgingField(target, item) {
 }
 
 if (addLodgingButton) {
-  addLodgingButton.addEventListener("click", () => {
+  addLodgingButton.addEventListener("click", (event) => {
+    event.preventDefault(); // summary 안의 버튼이라 접힘 토글을 막고, 대신 펼친다
+    addLodgingButton.closest("details")?.setAttribute("open", "");
     const lodging = createLodging();
     lodgings.push(lodging);
     saveLodgings();
@@ -2527,7 +2529,9 @@ function findExtraSpend(target) {
   return card ? extraSpends.find((item) => item.id === card.dataset.spendId) : null;
 }
 
-addSpendButton.addEventListener("click", () => {
+addSpendButton.addEventListener("click", (event) => {
+  event.preventDefault(); // summary 안의 버튼이라 접힘 토글을 막고, 대신 펼친다
+  addSpendButton.closest("details")?.setAttribute("open", "");
   const id = `spend-${Date.now()}-${extraSpends.length + 1}`;
   extraSpends.push({ id, name: "", category: "기타", currency: "KRW", amount: 0, pay: "onsite" });
   saveExtraSpends();
