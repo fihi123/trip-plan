@@ -585,10 +585,7 @@ function sortDayEvents(items) {
     .map((event, index) => {
       const minutes = startMinutes(event);
       let key;
-      if (event.isNew) {
-        // '완료' 버튼을 누르기 전까지는 시각을 입력해도 맨 위에 고정한다(편집 중 자리가 튀지 않게).
-        key = Number.NEGATIVE_INFINITY;
-      } else if (minutes == null) {
+      if (minutes == null) {
         key = lastKey;
       } else {
         key = minutes < DAY_START_CUTOFF ? minutes + 1440 : minutes;
@@ -654,7 +651,6 @@ function renderTimeline() {
         <input class="budget-edit" data-event-field="budget" inputmode="numeric" aria-label="예산" value="${html(event.budget || "")}" />
       </label>
       <button class="delete-inline delete-event" type="button" aria-label="일정 삭제">×</button>
-      ${event.isNew ? `<button class="event-done" type="button">완료 · 시간순 정렬</button>` : ""}
     `;
     timeline.append(card);
   });
@@ -1999,7 +1995,6 @@ timeline.addEventListener("input", (event) => {
   }
   const value = event.target.value;
   item[field] = field === "day" || field === "budget" ? Number(value || 0) : value;
-  // 새 항목은 "완료" 버튼을 누르기 전까지 맨 위에 고정한다(편집 중 정렬로 자리가 튀지 않게).
   saveEvents();
   if (field === "category") {
     renderTimeline();
@@ -2009,24 +2004,21 @@ timeline.addEventListener("input", (event) => {
   }
 });
 
+// 시각 입력을 마치면(포커스 이동/엔터) 곧바로 시간순으로 재정렬한다.
+// (입력 중에는 재렌더하지 않아 타이핑 중 카드가 튀지 않는다.)
+timeline.addEventListener("change", (event) => {
+  const field = event.target.dataset.eventField;
+  if (field === "start" || field === "end" || field === "day") {
+    renderTimeline();
+  }
+});
+
 timeline.addEventListener("click", (event) => {
   const goto = event.target.closest("[data-goto]");
   if (goto) {
     state.view = goto.dataset.goto;
     history.replaceState(null, "", `#${state.view}`);
     renderView();
-    return;
-  }
-  const doneButton = event.target.closest(".event-done");
-  if (doneButton) {
-    const doneCard = doneButton.closest(".event-card");
-    const doneItem = events.find((entry) => entry.id === doneCard.dataset.eventId);
-    if (doneItem) {
-      doneItem.isNew = false;
-      saveEvents();
-      renderTimeline();
-      renderSpend();
-    }
     return;
   }
   const deleteButton = event.target.closest(".delete-event");
@@ -2043,7 +2035,7 @@ timeline.addEventListener("click", (event) => {
 addEventButton.addEventListener("click", () => {
   const day = Number(state.day) || 1;
   const id = nextId("event", events);
-  events.push({ id, day, name: "새 일정", budget: 0, start: "", end: "", isNew: true });
+  events.push({ id, day, name: "새 일정", budget: 0, start: "", end: "" });
   saveEvents();
   renderTimeline();
   renderSpend();
