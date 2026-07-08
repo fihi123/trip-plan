@@ -1028,16 +1028,16 @@ function renderExchangeAdvice() {
   // --- 2) 경로 비교: 환전할 금액을 확보하는 방법별 원화 비용 (최저 강조) ---
   let routeBlock;
   // 이종통화 수수료: 달러를 페소로 바꿀 때 떼는 마진(%). 실효 페소/달러가 낮아져 필요한 달러가 늘어난다.
-  // 예) 수수료 2% → 1달러로 받는 페소가 phpUsd × 0.98. 원→페소 직접 경로에는 적용 안 함.
+  // 예) 수수료 2% → 1달러로 받는 페소가 phpUsd × 0.98. 자동(자동갱신) $→₱ 구간에만 적용한다.
+  // 사설 환율은 이미 환전소 마진이 반영된 값이므로 수수료를 추가로 빼지 않고, 원→페소 직접 경로에도 적용 안 함.
   const crossFee = num(rates.crossFee);
   const feeFactor = 1 - crossFee / 100;               // 0.98 등 (0~1)
   const oPhpUsdNet = o.phpUsd * feeFactor;             // 수수료 반영 자동갱신 페소/달러
-  const cPhpUsdNet = c.phpUsd * feeFactor;             // 수수료 반영 사설 페소/달러
   const routes = pesos > 0 ? [
     { label: "원→페소 직접 · 자동갱신", cost: o.phpKrw > 0 ? pesos * o.phpKrw : null },
     { label: "원→페소 직접 · 사설", cost: c.phpKrw > 0 ? pesos * c.phpKrw : null },
-    { label: "원→달러(자동)→페소(사설)", cost: o.krwUsd > 0 && cPhpUsdNet > 0 ? (pesos / cPhpUsdNet) * o.krwUsd : null },
-    { label: "원→달러(사설)→페소(사설)", cost: c.krwUsd > 0 && cPhpUsdNet > 0 ? (pesos / cPhpUsdNet) * c.krwUsd : null },
+    { label: "원→달러(자동)→페소(사설)", cost: o.krwUsd > 0 && c.phpUsd > 0 ? (pesos / c.phpUsd) * o.krwUsd : null },
+    { label: "원→달러(사설)→페소(사설)", cost: c.krwUsd > 0 && c.phpUsd > 0 ? (pesos / c.phpUsd) * c.krwUsd : null },
     { label: "원→달러(자동)→페소(자동)", cost: o.krwUsd > 0 && oPhpUsdNet > 0 ? (pesos / oPhpUsdNet) * o.krwUsd : null },
   ].filter((r) => r.cost != null).sort((a, b) => a.cost - b.cost) : [];
 
@@ -1054,7 +1054,7 @@ function renderExchangeAdvice() {
         <span class="advice-card__label">경로 비교 · ${held.php > 0 ? "추가 환전 금액" : "환전할 금액"} ${peso(pesos)}${held.php > 0 ? ` (보유 ${peso(held.php)} 차감)` : ""}</span>
         ${rows}
         <p class="advice-verdict">가장 싼 방법: <strong>${routes[0].label}</strong> · ${won(min)}</p>
-        ${crossFee > 0 ? `<p class="advice-verdict advice-verdict--sub">달러→페소 경로엔 이종통화 수수료 ${crossFee}% 반영됨.</p>` : ""}
+        ${crossFee > 0 ? `<p class="advice-verdict advice-verdict--sub">페소(자동) 구간에만 이종통화 수수료 ${crossFee}% 반영됨.</p>` : ""}
       </div>`;
   } else if (needed > 0 && held.php >= needed) {
     routeBlock = `
