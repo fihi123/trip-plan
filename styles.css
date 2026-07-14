@@ -1398,7 +1398,7 @@ body.saved-mode .segments {
 /* 실제 환전 내역 목록 (분할 매수) — 넓으면 한 줄에 2개, 좁으면 1개 */
 .fx-buy-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 8px 12px;
 }
 
@@ -1431,13 +1431,13 @@ body.saved-mode .segments {
 }
 
 .fx-buy__amount {
-  flex: 1 1 52px;
-  min-width: 48px;
+  flex: 1 1 84px;
+  min-width: 72px;
 }
 
 .fx-buy__rate {
-  flex: 1 1 52px;
-  min-width: 48px;
+  flex: 1 1 84px;
+  min-width: 72px;
 }
 
 .fx-buy__at {
