@@ -1346,15 +1346,15 @@ body.saved-mode .segments {
   padding-top: 8px;
   border-top: 1px dashed rgba(var(--teal-rgb), 0.35);
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 18px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .held-panel__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 6px 16px;
 }
 
@@ -1365,28 +1365,83 @@ body.saved-mode .segments {
   font-weight: 900;
 }
 
-.held-panel .held-rates {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-bottom: 0;
-  flex: 1 1 auto;
+.held-panel__hint {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--muted);
 }
 
-.held-panel .held-rates .inline-field {
+/* 실제 환전 내역 목록 (분할 매수) */
+.fx-buy-list {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
-  flex: 0 0 auto;
-  min-width: 0;
+}
+
+.fx-buy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.fx-buy select,
+.fx-buy input {
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid rgba(var(--teal-rgb), 0.25);
+  border-radius: 8px;
+  background: var(--surface, #fff);
   font-size: var(--fs-sm);
+}
+
+.fx-buy select {
+  flex: 0 0 auto;
+  width: 92px;
+}
+
+.fx-buy__amount {
+  flex: 1 1 96px;
+  min-width: 84px;
+}
+
+.fx-buy__rate {
+  flex: 1 1 96px;
+  min-width: 84px;
+}
+
+.fx-buy__at {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.fx-buy__cost {
+  flex: 1 1 120px;
+  min-width: 100px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
   white-space: nowrap;
 }
 
-.held-panel .held-rates input {
-  width: 80px;
-  min-height: 30px;
-  padding: 3px 8px;
+.fx-buy__cost strong {
+  color: var(--teal);
+  font-weight: 800;
+}
+
+.fx-buy__cost--muted {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.fx-buy__empty {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.fx-buy .delete-fx {
+  flex: 0 0 auto;
 }
 
 .held-panel .held-result:not(:empty) {

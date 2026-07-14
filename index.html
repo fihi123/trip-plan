@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="design-system/tokens.css?v=14" />
-    <link rel="stylesheet" href="styles.css?v=27" />
+    <link rel="stylesheet" href="styles.css?v=28" />
   </head>
   <body>
     <header class="hero">
@@ -83,20 +83,13 @@
           </div>
           <div class="budget-box">
             <div class="spend-total-bar" id="spendSummary"></div>
-            <div class="held-panel" aria-label="이미 보유한 외화">
+            <div class="held-panel" aria-label="실제 환전 내역">
               <div class="held-panel__head">
-                <h3 class="spend-heading">보유 외화</h3>
-                <div class="rates-section held-rates">
-                  <label class="inline-field">
-                    <span>페소 ₱</span>
-                    <input id="heldPhp" inputmode="numeric" aria-label="보유 페소" placeholder="0" />
-                  </label>
-                  <label class="inline-field">
-                    <span>달러 $</span>
-                    <input id="heldUsd" inputmode="numeric" aria-label="보유 달러" placeholder="0" />
-                  </label>
-                </div>
+                <h3 class="spend-heading">환전 내역</h3>
+                <button class="small-action" id="addFxBuyButton" type="button">+ 환전 추가</button>
               </div>
+              <p class="held-panel__hint">실제로 환전한 통화·금액·적용 환율을 넣으세요. 분할 매수는 여러 줄로 추가하면 됩니다.</p>
+              <div id="heldList" class="fx-buy-list"></div>
               <output id="heldResult" class="held-result"></output>
             </div>
           </div>
@@ -312,7 +305,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=27"></script>
+    <script src="app.js?v=28"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
