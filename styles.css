@@ -1398,8 +1398,8 @@ body.saved-mode .segments {
 /* 실제 환전 내역 목록 (분할 매수) — 넓으면 한 줄에 2개, 좁으면 1개 */
 .fx-buy-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 6px 10px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px 12px;
 }
 
 /* 빈 상태 문구는 열 전체 폭을 차지 */
@@ -1411,7 +1411,7 @@ body.saved-mode .segments {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
+  gap: 4px 6px;
 }
 
 .fx-buy select,
@@ -1426,18 +1426,18 @@ body.saved-mode .segments {
 
 .fx-buy select {
   flex: 0 0 auto;
-  width: 72px;
-  padding: 4px 4px;
+  width: 78px;
+  padding: 4px 2px 4px 6px;
 }
 
 .fx-buy__amount {
-  flex: 1 1 56px;
-  min-width: 52px;
+  flex: 1 1 52px;
+  min-width: 48px;
 }
 
 .fx-buy__rate {
-  flex: 1 1 56px;
-  min-width: 52px;
+  flex: 1 1 52px;
+  min-width: 48px;
 }
 
 .fx-buy__at {
