@@ -1395,11 +1395,16 @@ body.saved-mode .segments {
   font-size: var(--fs-caption);
 }
 
-/* 실제 환전 내역 목록 (분할 매수) */
+/* 실제 환전 내역 목록 (분할 매수) — 넓으면 한 줄에 2개, 좁으면 1개 */
 .fx-buy-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 6px 10px;
+}
+
+/* 빈 상태 문구는 열 전체 폭을 차지 */
+.fx-buy__empty {
+  grid-column: 1 / -1;
 }
 
 .fx-buy {
@@ -1421,17 +1426,18 @@ body.saved-mode .segments {
 
 .fx-buy select {
   flex: 0 0 auto;
-  width: 92px;
+  width: 72px;
+  padding: 4px 4px;
 }
 
 .fx-buy__amount {
-  flex: 1 1 96px;
-  min-width: 84px;
+  flex: 1 1 56px;
+  min-width: 52px;
 }
 
 .fx-buy__rate {
-  flex: 1 1 96px;
-  min-width: 84px;
+  flex: 1 1 56px;
+  min-width: 52px;
 }
 
 .fx-buy__at {
@@ -1440,9 +1446,11 @@ body.saved-mode .segments {
 }
 
 .fx-buy__cost {
-  flex: 1 1 120px;
-  min-width: 100px;
-  font-size: var(--fs-sm);
+  order: 5; /* 삭제 버튼(기본 order 0)보다 뒤 → 입력칸·삭제는 한 줄, 원화 환산은 그 아래 줄 */
+  flex: 1 1 100%;
+  min-width: 0;
+  padding-left: 2px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   color: var(--muted);
   white-space: nowrap;
@@ -1466,6 +1474,7 @@ body.saved-mode .segments {
 
 .fx-buy .delete-fx {
   flex: 0 0 auto;
+  margin-left: auto; /* 입력칸 줄 오른쪽 끝으로 */
 }
 
 .held-panel .held-result:not(:empty) {
