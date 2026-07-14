@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="design-system/tokens.css?v=14" />
-    <link rel="stylesheet" href="styles.css?v=29" />
+    <link rel="stylesheet" href="styles.css?v=30" />
   </head>
   <body>
     <header class="hero">
@@ -92,12 +92,11 @@
                 <p class="held-panel__hint">이번에 새로 환전한 통화·금액·적용 환율을 넣으세요. 분할 매수는 여러 줄로 추가하면 됩니다.</p>
                 <div id="fxNewList" class="fx-buy-list"></div>
               </div>
-              <div class="fx-group">
+              <div class="fx-group fx-group--held">
                 <div class="held-panel__head">
-                  <h3 class="spend-heading">보유분</h3>
+                  <h3 class="spend-heading">보유분 <span class="fx-group__note">이미 가진 외화 · 금액만</span></h3>
                   <button class="small-action" id="addFxHeldButton" type="button">+ 보유 추가</button>
                 </div>
-                <p class="held-panel__hint">이미 가지고 있던 외화는 금액만 넣으세요(환율 입력 없음). 환전할 금액에서 차감됩니다.</p>
                 <div id="fxHeldList" class="fx-buy-list"></div>
               </div>
               <output id="heldResult" class="held-result"></output>
@@ -315,7 +314,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=29"></script>
+    <script src="app.js?v=30"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

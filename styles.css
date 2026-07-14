@@ -1378,6 +1378,23 @@ body.saved-mode .segments {
   gap: 6px;
 }
 
+/* 보유분은 부차적이라 콤팩트하게 */
+.fx-group--held {
+  gap: 4px;
+}
+
+.fx-group__note {
+  margin-left: 6px;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.fx-buy__empty--compact {
+  font-size: var(--fs-caption);
+}
+
 /* 실제 환전 내역 목록 (분할 매수) */
 .fx-buy-list {
   display: flex;

@@ -980,7 +980,7 @@ function renderFxBuys() {
     const held = buys.filter((b) => b.kind === "held");
     fxHeldList.innerHTML = held.length
       ? held.map(fxHeldRowHtml).join("")
-      : `<p class="fx-buy__empty">이미 가진 외화가 있으면 <strong>+ 보유 추가</strong>로 금액만 넣으세요.</p>`;
+      : `<p class="fx-buy__empty fx-buy__empty--compact">없음 · <strong>+ 보유 추가</strong></p>`;
   }
 }
 
