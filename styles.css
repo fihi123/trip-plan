@@ -1371,6 +1371,13 @@ body.saved-mode .segments {
   color: var(--muted);
 }
 
+/* 실제 환전 내역 — 신규/보유 그룹 */
+.fx-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 /* 실제 환전 내역 목록 (분할 매수) */
 .fx-buy-list {
   display: flex;

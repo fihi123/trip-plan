@@ -10,7 +10,7 @@ const defaultRates = {
   usdSpread: 1.75, usdPref: 90, phpSpread: 10, phpPref: 20,
   crossFee: 0, // 이종통화 수수료(%): 달러↔페소 환전 시 떼는 마진. 경로 비교의 $→₱ 구간에 적용.
   heldUsd: 0, heldPhp: 0, // (레거시) 이미 보유한 달러·페소 단일값 — fxBuys로 이관
-  fxBuys: [], // 실제 환전 내역: [{ id, cur:'PHP'|'USD', amount, rate(원/단위) }] — 분할 매수 지원
+  fxBuys: [], // 실제 환전 내역: [{ id, kind:'new'|'held', cur:'PHP'|'USD', amount, rate(원/단위) }] — 분할 매수 지원. kind='held'(보유분)은 환율 없이 금액만.
   updatedAt: "",
 };
 
@@ -276,16 +276,23 @@ function loadRates() {
   const heldPhp = Number(stored.heldPhp) > 0 ? Number(stored.heldPhp) : 0;
   // 실제 환전 내역 (분할 매수). 저장값 정리 후, 없으면 레거시 보유값을 이관.
   let fxBuys = Array.isArray(stored.fxBuys)
-    ? stored.fxBuys.map((b, i) => ({
-        id: (b && typeof b.id === "string") ? b.id : `fx-${i}-${Math.random().toString(36).slice(2, 7)}`,
-        cur: (b && b.cur === "USD") ? "USD" : "PHP",
-        amount: (b && Number(b.amount) > 0) ? Number(b.amount) : 0,
-        rate: (b && Number(b.rate) > 0) ? Number(b.rate) : 0,
-      }))
+    ? stored.fxBuys.map((b, i) => {
+        const rate = (b && Number(b.rate) > 0) ? Number(b.rate) : 0;
+        // kind 미지정(구버전 데이터)은 환율이 있으면 신규 환전, 없으면 보유분으로 추정
+        const kind = (b && (b.kind === "held" || b.kind === "new")) ? b.kind : (rate > 0 ? "new" : "held");
+        return {
+          id: (b && typeof b.id === "string") ? b.id : `fx-${i}-${Math.random().toString(36).slice(2, 7)}`,
+          kind,
+          cur: (b && b.cur === "USD") ? "USD" : "PHP",
+          amount: (b && Number(b.amount) > 0) ? Number(b.amount) : 0,
+          rate,
+        };
+      })
     : [];
   if (!fxBuys.length) {
-    if (heldPhp > 0) fxBuys.push({ id: "fx-legacy-php", cur: "PHP", amount: heldPhp, rate: 0 });
-    if (heldUsd > 0) fxBuys.push({ id: "fx-legacy-usd", cur: "USD", amount: heldUsd, rate: 0 });
+    // 레거시 단일 보유값은 보유분(kind='held')으로 이관
+    if (heldPhp > 0) fxBuys.push({ id: "fx-legacy-php", kind: "held", cur: "PHP", amount: heldPhp, rate: 0 });
+    if (heldUsd > 0) fxBuys.push({ id: "fx-legacy-usd", kind: "held", cur: "USD", amount: heldUsd, rate: 0 });
   }
   // 스프레드·우대율은 0 이상 유효값이면 그대로, 아니면 기본값
   const pct = (value, fallback) => {
@@ -367,8 +374,11 @@ const usdPrefInput = document.querySelector("#usdPref");
 const phpSpreadInput = document.querySelector("#phpSpread");
 const phpPrefInput = document.querySelector("#phpPref");
 const crossFeeInput = document.querySelector("#crossFee");
-const heldList = document.querySelector("#heldList");
-const addFxBuyButton = document.querySelector("#addFxBuyButton");
+const heldPanel = document.querySelector(".held-panel");
+const fxNewList = document.querySelector("#fxNewList");
+const fxHeldList = document.querySelector("#fxHeldList");
+const addFxNewButton = document.querySelector("#addFxNewButton");
+const addFxHeldButton = document.querySelector("#addFxHeldButton");
 const heldResult = document.querySelector("#heldResult");
 const fetchRatesButton = document.querySelector("#fetchRatesButton");
 const ratesUpdated = document.querySelector("#ratesUpdated");
@@ -483,7 +493,8 @@ function heldInPhp() {
     const rate = Number(b.rate) > 0 ? Number(b.rate) : 0;
     if (b.cur === "USD") heldUsd += amount;
     else heldPhp += amount;
-    krwSpent += amount * rate;
+    // 실제 환전액(원화 지출)은 신규 환전분에만 반영. 보유분은 이번에 쓴 돈이 아님.
+    if (b.kind !== "held") krwSpent += amount * rate;
   });
   const parts = [];
   if (heldPhp > 0) parts.push(`₱${Math.round(heldPhp).toLocaleString("ko-KR")}`);
@@ -922,17 +933,20 @@ function fxRowCostHtml(cur, amount, rate) {
   return `= <strong>₩${Math.round(amt * r).toLocaleString("ko-KR")}</strong>`;
 }
 
+// 보유분 한 내역의 페소 환산 표시 (달러 보유분만 ₱ 환산, 페소는 그 자체라 생략)
+function fxHeldCostHtml(cur, amount) {
+  const amt = Number(amount) > 0 ? Number(amount) : 0;
+  if (!amt || cur !== "USD") return "";
+  const php = rates.phpPerUsd > 0 ? amt * rates.phpPerUsd : 0;
+  if (!php) return "";
+  return `= <strong>₱${Math.round(php).toLocaleString("ko-KR")}</strong>`;
+}
+
 // 실제 환전 내역 입력 행 렌더 (통화 · 금액 · 적용환율 · 실지출 · 삭제)
-function renderFxBuys() {
-  if (!heldList) return;
-  const buys = fxBuysList();
-  if (!buys.length) {
-    heldList.innerHTML = `<p class="fx-buy__empty">아직 환전 내역이 없습니다. <strong>+ 환전 추가</strong>로 실제 환전한 금액과 환율을 넣어보세요.</p>`;
-    return;
-  }
-  heldList.innerHTML = buys.map((b) => {
-    const unit = b.cur === "USD" ? "원/$" : "원/₱";
-    return `
+// 신규 환전 한 행 (통화 · 금액 · @ · 적용환율 · 실지출 · 삭제)
+function fxNewRowHtml(b) {
+  const unit = b.cur === "USD" ? "원/$" : "원/₱";
+  return `
       <div class="fx-buy" data-fx-id="${html(b.id)}">
         <select data-fx-field="cur" aria-label="환전 통화">${fxCurOptions(b.cur)}</select>
         <input class="fx-buy__amount" data-fx-field="amount" inputmode="numeric" aria-label="환전 금액" placeholder="금액" value="${b.amount > 0 ? String(b.amount) : ""}" />
@@ -941,7 +955,33 @@ function renderFxBuys() {
         <span class="fx-buy__cost" data-fx-cost>${fxRowCostHtml(b.cur, b.amount, b.rate)}</span>
         <button class="delete-inline delete-fx" type="button" aria-label="환전 내역 삭제">×</button>
       </div>`;
-  }).join("");
+}
+
+// 보유분 한 행 (통화 · 금액 · ₱환산 · 삭제) — 환율 입력 없음
+function fxHeldRowHtml(b) {
+  return `
+      <div class="fx-buy fx-buy--held" data-fx-id="${html(b.id)}">
+        <select data-fx-field="cur" aria-label="보유 통화">${fxCurOptions(b.cur)}</select>
+        <input class="fx-buy__amount" data-fx-field="amount" inputmode="numeric" aria-label="보유 금액" placeholder="금액" value="${b.amount > 0 ? String(b.amount) : ""}" />
+        <span class="fx-buy__cost" data-fx-cost>${fxHeldCostHtml(b.cur, b.amount)}</span>
+        <button class="delete-inline delete-fx" type="button" aria-label="보유 내역 삭제">×</button>
+      </div>`;
+}
+
+function renderFxBuys() {
+  const buys = fxBuysList();
+  if (fxNewList) {
+    const news = buys.filter((b) => b.kind !== "held");
+    fxNewList.innerHTML = news.length
+      ? news.map(fxNewRowHtml).join("")
+      : `<p class="fx-buy__empty">이번에 새로 환전한 내역이 없습니다. <strong>+ 신규 추가</strong>로 금액·환율을 넣으세요.</p>`;
+  }
+  if (fxHeldList) {
+    const held = buys.filter((b) => b.kind === "held");
+    fxHeldList.innerHTML = held.length
+      ? held.map(fxHeldRowHtml).join("")
+      : `<p class="fx-buy__empty">이미 가진 외화가 있으면 <strong>+ 보유 추가</strong>로 금액만 넣으세요.</p>`;
+  }
 }
 
 function renderSpend() {
@@ -2619,29 +2659,31 @@ function findFxBuy(target) {
   return row ? fxBuysList().find((b) => b.id === row.dataset.fxId) : null;
 }
 
-if (addFxBuyButton) {
-  addFxBuyButton.addEventListener("click", () => {
-    if (!Array.isArray(rates.fxBuys)) rates.fxBuys = [];
-    // 직전 내역의 통화를 이어받아 분할 매수 입력이 편하도록
-    const prev = rates.fxBuys[rates.fxBuys.length - 1];
-    rates.fxBuys.push({
-      id: `fx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      cur: prev && prev.cur === "USD" ? "USD" : "PHP",
-      amount: 0,
-      rate: 0,
-    });
-    saveRates();
-    renderFxBuys();
-    renderSpend();
-    const rows = heldList ? heldList.querySelectorAll(".fx-buy") : [];
-    const last = rows[rows.length - 1];
-    if (last) last.querySelector('[data-fx-field="amount"]')?.focus();
+// 새 환전 행 추가 (kind: 'new' 신규 환전 / 'held' 보유분). 직전 동일 구분 행의 통화를 이어받음.
+function addFxBuy(kind, listEl) {
+  if (!Array.isArray(rates.fxBuys)) rates.fxBuys = [];
+  const prev = [...rates.fxBuys].reverse().find((b) => (b.kind === "held" ? "held" : "new") === kind);
+  rates.fxBuys.push({
+    id: `fx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    kind,
+    cur: prev && prev.cur === "USD" ? "USD" : "PHP",
+    amount: 0,
+    rate: 0,
   });
+  saveRates();
+  renderFxBuys();
+  renderSpend();
+  const rows = listEl ? listEl.querySelectorAll(".fx-buy") : [];
+  const last = rows[rows.length - 1];
+  if (last) last.querySelector('[data-fx-field="amount"]')?.focus();
 }
 
-if (heldList) {
+if (addFxNewButton) addFxNewButton.addEventListener("click", () => addFxBuy("new", fxNewList));
+if (addFxHeldButton) addFxHeldButton.addEventListener("click", () => addFxBuy("held", fxHeldList));
+
+if (heldPanel) {
   // 금액·환율: 입력 즉시 저장하고 요약만 갱신(행은 다시 그리지 않아 포커스 유지)
-  heldList.addEventListener("input", (event) => {
+  heldPanel.addEventListener("input", (event) => {
     const el = event.target;
     const field = el.dataset ? el.dataset.fxField : null;
     if (field !== "amount" && field !== "rate") return;
@@ -2651,11 +2693,15 @@ if (heldList) {
     item[field] = Number.isFinite(n) && n > 0 ? n : 0;
     saveRates();
     const costCell = el.closest(".fx-buy")?.querySelector("[data-fx-cost]");
-    if (costCell) costCell.innerHTML = fxRowCostHtml(item.cur, item.amount, item.rate);
+    if (costCell) {
+      costCell.innerHTML = item.kind === "held"
+        ? fxHeldCostHtml(item.cur, item.amount)
+        : fxRowCostHtml(item.cur, item.amount, item.rate);
+    }
     renderSpend();
   });
-  // 통화 변경: 행을 다시 그려 환율 단위 표시를 갱신
-  heldList.addEventListener("change", (event) => {
+  // 통화 변경: 행을 다시 그려 환율 단위·환산 표시를 갱신
+  heldPanel.addEventListener("change", (event) => {
     const el = event.target;
     if (!el.dataset || el.dataset.fxField !== "cur") return;
     const item = findFxBuy(el);
@@ -2666,7 +2712,7 @@ if (heldList) {
     renderSpend();
   });
   // 내역 삭제
-  heldList.addEventListener("click", (event) => {
+  heldPanel.addEventListener("click", (event) => {
     const button = event.target.closest(".delete-fx");
     if (!button) return;
     const item = findFxBuy(button);

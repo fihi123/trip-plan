@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="design-system/tokens.css?v=14" />
-    <link rel="stylesheet" href="styles.css?v=28" />
+    <link rel="stylesheet" href="styles.css?v=29" />
   </head>
   <body>
     <header class="hero">
@@ -84,12 +84,22 @@
           <div class="budget-box">
             <div class="spend-total-bar" id="spendSummary"></div>
             <div class="held-panel" aria-label="실제 환전 내역">
-              <div class="held-panel__head">
-                <h3 class="spend-heading">환전 내역</h3>
-                <button class="small-action" id="addFxBuyButton" type="button">+ 환전 추가</button>
+              <div class="fx-group">
+                <div class="held-panel__head">
+                  <h3 class="spend-heading">신규 환전</h3>
+                  <button class="small-action" id="addFxNewButton" type="button">+ 신규 추가</button>
+                </div>
+                <p class="held-panel__hint">이번에 새로 환전한 통화·금액·적용 환율을 넣으세요. 분할 매수는 여러 줄로 추가하면 됩니다.</p>
+                <div id="fxNewList" class="fx-buy-list"></div>
               </div>
-              <p class="held-panel__hint">실제로 환전한 통화·금액·적용 환율을 넣으세요. 분할 매수는 여러 줄로 추가하면 됩니다.</p>
-              <div id="heldList" class="fx-buy-list"></div>
+              <div class="fx-group">
+                <div class="held-panel__head">
+                  <h3 class="spend-heading">보유분</h3>
+                  <button class="small-action" id="addFxHeldButton" type="button">+ 보유 추가</button>
+                </div>
+                <p class="held-panel__hint">이미 가지고 있던 외화는 금액만 넣으세요(환율 입력 없음). 환전할 금액에서 차감됩니다.</p>
+                <div id="fxHeldList" class="fx-buy-list"></div>
+              </div>
               <output id="heldResult" class="held-result"></output>
             </div>
           </div>
@@ -305,7 +315,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=28"></script>
+    <script src="app.js?v=29"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
