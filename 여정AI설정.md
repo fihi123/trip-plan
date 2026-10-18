@@ -69,7 +69,7 @@ const AI_PARSE_ENDPOINT = "https://asia-northeast3-trip-plan-4b079.cloudfunction
 
 ## 동작 방식 / 보안 메모
 
-- 클라이언트는 PDF 텍스트만 보냅니다. **Gemini 키는 함수 시크릿에만** 있고 브라우저로 내려가지 않습니다.
+- 클라이언트는 PDF 텍스트만 보냅니다. **이미지(스크린샷·사진)나 스캔본 PDF**(글자 추출 불가)는 긴 변 1600px JPEG로 줄여 최대 4장을 보내고, Gemini가 이미지를 직접 읽습니다(이미지는 AI 전용 — 오프라인 정규식 폴백 없음). **Gemini 키는 함수 시크릿에만** 있고 브라우저로 내려가지 않습니다.
 - 함수는 **Origin 화이트리스트**(github.io / web.app / localhost)로 다른 사이트의 브라우저 남용을 차단하고, 입력 길이 상한(20,000자)과 `maxInstances=3`으로 비용 폭주를 막습니다.
 - URL을 직접 아는 비(非)브라우저 호출까지 막고 싶으면 **Firebase App Check**(reCAPTCHA)를 추가로 붙이면 됩니다.
 - 새 기기 도메인에서 쓰려면 `functions/index.js`의 `ALLOWED_ORIGINS`에 오리진을 추가하고 재배포하세요.

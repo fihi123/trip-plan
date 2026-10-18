@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="design-system/tokens.css?v=14" />
-    <link rel="stylesheet" href="styles.css?v=33" />
+    <link rel="stylesheet" href="styles.css?v=34" />
   </head>
   <body>
     <header class="hero">
@@ -18,8 +18,8 @@
         <div class="trip-duration guide-view" aria-label="여행 기간">
           <label><input id="tripNights" type="number" min="0" max="60" inputmode="numeric" aria-label="박 수" /> 박</label>
           <label><input id="tripDays" type="number" min="1" max="60" inputmode="numeric" aria-label="일 수" /> 일</label>
-          <button class="small-action" id="importPdfButton" type="button">여정 PDF 불러오기</button>
-          <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden />
+          <button class="small-action" id="importPdfButton" type="button">여정 PDF·이미지 불러오기</button>
+          <input id="pdfInput" type="file" accept="application/pdf,.pdf,image/*" multiple hidden />
           <span class="trip-dates" id="tripDates"></span>
         </div>
         <div class="topbar__nav">
@@ -314,7 +314,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=33"></script>
+    <script src="app.js?v=34"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

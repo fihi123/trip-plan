@@ -1,8 +1,8 @@
 // 여정서(전자항공권) AI 인식 프록시.
 //
 // 정적 사이트(GitHub Pages)에는 Gemini API 키를 넣을 수 없다(소스에 노출됨).
-// 그래서 키는 이 함수의 "시크릿"으로만 두고, 클라이언트는 추출한 여정서 텍스트만
-// 이 함수로 보낸다. 함수가 Gemini를 호출해 구조화된 JSON을 돌려준다.
+// 그래서 키는 이 함수의 "시크릿"으로만 두고, 클라이언트는 추출한 여정서 텍스트
+// (또는 스크린샷/스캔본 이미지)만 이 함수로 보낸다. 함수가 Gemini를 호출해 구조화된 JSON을 돌려준다.
 //
 // 배포 전 준비 (자세한 건 여정AI설정.md):
 //   1) Firebase 프로젝트를 Blaze(종량제) 요금제로 업그레이드
@@ -31,6 +31,9 @@ const ALLOWED_ORIGINS = new Set([
 
 const MODEL = "gemini-2.5-flash";
 const MAX_TEXT = 20000; // 여정서 텍스트 상한(남용/비용 방지)
+const MAX_IMAGES = 4; // 이미지(스크린샷/스캔본) 장수 상한
+const MAX_IMAGE_B64 = 4 * 1024 * 1024; // 이미지 1장 base64 상한(약 3MB)
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 // Gemini가 이 스키마대로 JSON을 내도록 강제한다. 필드 모양은 app.js의
 // parseItinerary() 결과와 맞춰 두어 클라이언트 후처리를 최소화한다.
@@ -60,9 +63,11 @@ const RESPONSE_SCHEMA = {
   required: ["startDate", "endDate", "flights"],
 };
 
-function buildPrompt(text) {
+function buildPrompt(text, imageCount) {
   return [
-    "다음은 항공 여정서/전자항공권 PDF에서 추출한 텍스트다.",
+    imageCount
+      ? `다음 이미지 ${imageCount}장은 항공 여정서/전자항공권/예약 확인 화면(스크린샷 또는 스캔본)이다.`
+      : "다음은 항공 여정서/전자항공권 PDF에서 추출한 텍스트다.",
     "항공편 정보를 정확히 추출해 스키마에 맞는 JSON으로만 답하라.",
     "규칙:",
     "- 모든 시각은 24시간제 HH:MM.",
@@ -72,18 +77,18 @@ function buildPrompt(text) {
     "- 왕복/경유면 flights에 각 구간을 시간 순서대로 모두 넣어라.",
     "- 총 항공료가 KRW로 있으면 airfareKrw에 콤마 뺀 숫자만, 없으면 0.",
     "- 확실하지 않은 값은 지어내지 말고 빈 문자열/0으로 둬라.",
-    "",
-    "텍스트:",
-    '"""',
-    text,
-    '"""',
+    ...(text ? ["", "텍스트:", '"""', text, '"""'] : []),
   ].join("\n");
 }
 
-async function callGemini(text, key) {
+async function callGemini(text, images, key) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+  const parts = [
+    ...images.map((image) => ({ inline_data: { mime_type: image.mimeType, data: image.data } })),
+    { text: buildPrompt(text, images.length) },
+  ];
   const body = {
-    contents: [{ parts: [{ text: buildPrompt(text) }] }],
+    contents: [{ parts }],
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
@@ -110,7 +115,7 @@ exports.parseItinerary = onRequest(
     secrets: [GEMINI_API_KEY],
     region: "asia-northeast3",
     memory: "256MiB",
-    timeoutSeconds: 30,
+    timeoutSeconds: 60, // 이미지 인식은 텍스트보다 오래 걸린다
     maxInstances: 3, // 폭주 시 비용 상한
     cors: false, // CORS는 아래에서 오리진 화이트리스트로 직접 처리
   },
@@ -139,13 +144,22 @@ exports.parseItinerary = onRequest(
     }
 
     const text = req.body && typeof req.body.text === "string" ? req.body.text : "";
-    if (text.length < 10) {
+    const rawImages = req.body && Array.isArray(req.body.images) ? req.body.images : [];
+    const images = rawImages
+      .slice(0, MAX_IMAGES)
+      .filter((image) => image && IMAGE_TYPES.has(image.mimeType) && typeof image.data === "string"
+        && image.data.length > 100 && image.data.length <= MAX_IMAGE_B64);
+    if (rawImages.length && !images.length) {
+      res.status(400).json({ error: "이미지 형식/크기가 올바르지 않습니다." });
+      return;
+    }
+    if (!images.length && text.length < 10) {
       res.status(400).json({ error: "여정서 텍스트가 없습니다." });
       return;
     }
 
     try {
-      const result = await callGemini(text.slice(0, MAX_TEXT), GEMINI_API_KEY.value());
+      const result = await callGemini(text.slice(0, MAX_TEXT), images, GEMINI_API_KEY.value());
       res.json(result);
     } catch (err) {
       logger.error("Gemini 호출 실패", err);

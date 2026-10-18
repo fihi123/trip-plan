@@ -1930,7 +1930,7 @@ tripDays.addEventListener("input", () => {
   renderSpend();
 });
 
-// === 여정안내서(PDF) 자동 인식 ===
+// === 여정안내서(PDF·이미지) 자동 인식 ===
 let pdfjsPromise = null;
 function loadPdfJs() {
   if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
@@ -2065,41 +2065,116 @@ function normalizeAiItinerary(data) {
   return { startDate, endDate, days, nights: Math.max(0, days - 1), flights, airfareKrw };
 }
 
-// 추출한 여정서 텍스트를 프록시로 보내 AI로 구조화한다. 엔드포인트 미설정이면 null(→ 정규식 폴백),
+// 추출한 여정서 텍스트(또는 이미지)를 프록시로 보내 AI로 구조화한다. 엔드포인트 미설정이면 null(→ 정규식 폴백),
 // 호출 실패는 throw 해서 호출부가 폴백을 타도록 한다.
-async function parseItineraryViaAi(text) {
+async function parseItineraryViaAi({ text = "", images = [] }) {
   if (!AI_PARSE_ENDPOINT) return null;
   const res = await fetch(AI_PARSE_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: text.slice(0, 20000) }),
+    body: JSON.stringify(images.length ? { images } : { text: text.slice(0, 20000) }),
   });
   if (!res.ok) throw new Error(`AI ${res.status}`);
   return normalizeAiItinerary(await res.json());
 }
 
-async function importItineraryPdf(file) {
+// 캔버스를 AI 전송용 JPEG(base64)로 바꾼다.
+function canvasToAiImage(canvas) {
+  const data = canvas.toDataURL("image/jpeg", 0.85).split(",")[1] || "";
+  return { mimeType: "image/jpeg", data };
+}
+
+// 긴 변 1600px 이하로 줄여 전송량을 줄인다(글자 인식엔 충분).
+const AI_IMAGE_MAX_SIDE = 1600;
+async function imageFileToAiImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("이미지를 열 수 없습니다."));
+      el.src = url;
+    });
+    const scale = Math.min(1, AI_IMAGE_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvasToAiImage(canvas);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// 텍스트가 없는 스캔본 PDF는 앞쪽 몇 페이지를 이미지로 렌더링해 AI에 보낸다.
+async function renderPdfPagesToAiImages(file, maxPages = 3) {
+  const pdfjsLib = await loadPdfJs();
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const images = [];
+  for (let page = 1; page <= Math.min(pdf.numPages, maxPages); page += 1) {
+    const pdfPage = await pdf.getPage(page);
+    const base = pdfPage.getViewport({ scale: 1 });
+    const viewport = pdfPage.getViewport({ scale: Math.min(2, AI_IMAGE_MAX_SIDE / Math.max(base.width, base.height)) });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
+    await pdfPage.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    images.push(canvasToAiImage(canvas));
+  }
+  return images;
+}
+
+const isPdfFile = (file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+
+async function importItinerary(files) {
   importPdfButton.disabled = true;
   const original = importPdfButton.textContent;
   importPdfButton.textContent = "인식 중…";
   try {
-    const text = await extractPdfText(file);
-    // 1순위: AI 인식(양식 무관). 실패하면 2순위: 기존 정규식 파서(오프라인 폴백).
+    const pdfFile = files.find(isPdfFile);
+    const imageFiles = files.filter((file) => !isPdfFile(file) && file.type.startsWith("image/")).slice(0, 4);
+    // PDF면 텍스트를 뽑고(스캔본이라 글자가 거의 없으면 페이지를 이미지로), 이미지면 그대로 AI로 보낸다.
+    let text = "";
+    let images = [];
+    if (pdfFile) {
+      text = await extractPdfText(pdfFile);
+      if (text.replace(/\s/g, "").length < 40) images = await renderPdfPagesToAiImages(pdfFile);
+    } else {
+      images = await Promise.all(imageFiles.map(imageFileToAiImage));
+    }
+    if (!text.trim() && !images.length) {
+      alert("PDF 또는 이미지 파일(JPG·PNG 등)을 선택해 주세요.");
+      return;
+    }
+    if (images.length && !AI_PARSE_ENDPOINT) {
+      alert("이미지 인식은 AI 설정이 필요합니다. 텍스트 기반 PDF(전자항공권)를 사용하거나 기간을 직접 입력해 주세요.");
+      return;
+    }
+    // 1순위: AI 인식(양식 무관). 실패하면 2순위: 기존 정규식 파서(오프라인 폴백, 텍스트만).
     let result = null;
     let usedAi = false;
     try {
       importPdfButton.textContent = "AI 인식 중…";
-      result = await parseItineraryViaAi(text);
+      result = await parseItineraryViaAi({ text, images });
       if (result) usedAi = true;
     } catch (error) {
       console.log("AI 여정 인식 실패 → 정규식 폴백:", error);
+      if (images.length) {
+        alert("이미지 인식에 실패했습니다. 인터넷 연결을 확인하거나, 글자가 선명하게 보이는 이미지로 다시 시도해 주세요.");
+        return;
+      }
     }
-    if (!result) {
+    if (!result && text.trim()) {
       importPdfButton.textContent = "인식 중…";
       result = parseItinerary(text);
     }
     if (!result) {
-      alert("여정에서 날짜를 찾지 못했습니다. 텍스트 기반 PDF(전자항공권)인지 확인하거나 기간을 직접 입력해 주세요.");
+      alert(images.length
+        ? "이미지에서 항공 일정을 찾지 못했습니다. 편명·날짜·시각이 잘 보이도록 캡처해 다시 시도하거나 기간을 직접 입력해 주세요."
+        : "여정에서 날짜를 찾지 못했습니다. 텍스트 기반 PDF(전자항공권)인지 확인하거나 기간을 직접 입력해 주세요.");
       return;
     }
     const flightLines = result.flights.map((flight) =>
@@ -2148,7 +2223,8 @@ async function importItineraryPdf(file) {
     renderExtraSpends();
     renderSpend();
   } catch (error) {
-    alert("PDF를 읽지 못했습니다. 인터넷 연결(최초 1회 라이브러리 다운로드)을 확인하거나, 스캔본이 아닌 전자항공권 PDF인지 확인해 주세요.");
+    console.log("여정 불러오기 실패:", error);
+    alert("파일을 읽지 못했습니다. 인터넷 연결(최초 1회 라이브러리 다운로드)을 확인하거나, 다른 PDF/이미지로 다시 시도해 주세요.");
   } finally {
     importPdfButton.disabled = false;
     importPdfButton.textContent = original;
@@ -2157,8 +2233,8 @@ async function importItineraryPdf(file) {
 
 importPdfButton.addEventListener("click", () => pdfInput.click());
 pdfInput.addEventListener("change", (event) => {
-  const file = event.target.files?.[0];
-  if (file) importItineraryPdf(file);
+  const files = Array.from(event.target.files || []);
+  if (files.length) importItinerary(files);
   pdfInput.value = "";
 });
 
