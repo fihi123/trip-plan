@@ -848,13 +848,15 @@ function renderTrip() {
 // === 지출 내역 (페소·원·달러) — 일정 항목 + 골프(1인 기준)를 합산 ===
 // 골프 비용은 1인 합계를 해당 라운드의 일정 일차에 배정한다.
 function spendItems() {
-  const fromEvents = events.map((event) => ({
+  // 여행 기간 밖(일차 > trip.days)으로 밀려난 일정·골프는 화면에 안 보이므로 지출에서도 뺀다.
+  const inTrip = (day) => (Number(day) || 0) <= trip.days;
+  const fromEvents = events.filter((event) => inTrip(event.day)).map((event) => ({
     name: event.name || "(이름 없음)",
     day: Number(event.day) || 0,
     category: eventCategoryLabel(event),
     amount: Number(event.budget || 0),
   }));
-  const fromGolf = golf.rounds.map((round) => {
+  const fromGolf = golf.rounds.filter((round) => inTrip(round.tripDay)).map((round) => {
     const breakdown = golfRoundBreakdown(round, golf.people);
     return {
       name: `⛳ ${breakdown.course.name} (${round.day}${round.time ? ` ${round.time}` : ""})`,
