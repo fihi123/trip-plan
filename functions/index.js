@@ -1,4 +1,4 @@
-// 여정서(전자항공권) AI 인식 프록시.
+// 여정서(전자항공권)·호텔 바우처 AI 인식 프록시. 요청 body의 kind: "hotel"이면 바우처 모드.
 //
 // 정적 사이트(GitHub Pages)에는 Gemini API 키를 넣을 수 없다(소스에 노출됨).
 // 그래서 키는 이 함수의 "시크릿"으로만 두고, 클라이언트는 추출한 여정서 텍스트
@@ -63,6 +63,42 @@ const RESPONSE_SCHEMA = {
   required: ["startDate", "endDate", "flights"],
 };
 
+// 호텔 바우처 모드 스키마. app.js의 normalizeAiHotel()이 숙박 카드 값으로 바꾼다.
+const HOTEL_SCHEMA = {
+  type: "object",
+  properties: {
+    hotelName: { type: "string", description: "호텔/숙소명" },
+    checkIn: { type: "string", description: "체크인 날짜 YYYY-MM-DD" },
+    checkOut: { type: "string", description: "체크아웃 날짜 YYYY-MM-DD" },
+    nights: { type: "number", description: "숙박 박수" },
+    rooms: { type: "number", description: "객실 수. 없으면 0" },
+    guests: { type: "number", description: "총 투숙 인원(성인+아동). 없으면 0" },
+    totalAmount: { type: "number", description: "전체 객실·전체 박의 총 금액(세금 포함) 숫자만. 없으면 0" },
+    nightlyAmount: { type: "number", description: "1박 금액(전체 객실 합) 숫자만. 없으면 0" },
+    currency: { type: "string", description: "금액 통화 ISO 코드 예: KRW, PHP, USD" },
+    payment: { type: "string", description: "'prepaid'(결제 완료/선결제), 'onsite'(현장/체크인 시 결제), 모르면 빈 문자열" },
+  },
+  required: ["hotelName", "checkIn", "checkOut"],
+};
+
+function buildHotelPrompt(text, imageCount) {
+  return [
+    imageCount
+      ? `다음 이미지 ${imageCount}장은 호텔 예약 바우처/예약 확인서(스크린샷 또는 스캔본)이다.`
+      : "다음은 호텔 예약 바우처/예약 확인서 PDF에서 추출한 텍스트다.",
+    "숙박 예약 정보를 정확히 추출해 스키마에 맞는 JSON으로만 답하라.",
+    "규칙:",
+    "- 날짜는 YYYY-MM-DD. 연도가 없으면 예약일/발행일을 근거로 실제 숙박 연도를 붙여라.",
+    "- nights는 체크인~체크아웃 박수.",
+    "- totalAmount는 모든 객실·모든 박을 합친 최종 결제 금액(세금·봉사료 포함), 콤마 뺀 숫자만.",
+    "- nightlyAmount는 1박 기준 전체 객실 합계 금액. 총액만 있으면 0으로 둬도 된다.",
+    "- currency는 금액 표기 통화의 ISO 코드(₩→KRW, ₱→PHP, $/US$→USD).",
+    "- 'Paid', '결제 완료', 'Prepaid'면 payment='prepaid', 'Pay at hotel', '현장 결제'면 'onsite'.",
+    "- 확실하지 않은 값은 지어내지 말고 빈 문자열/0으로 둬라.",
+    ...(text ? ["", "텍스트:", '"""', text, '"""'] : []),
+  ].join("\n");
+}
+
 function buildPrompt(text, imageCount) {
   return [
     imageCount
@@ -81,17 +117,18 @@ function buildPrompt(text, imageCount) {
   ].join("\n");
 }
 
-async function callGemini(text, images, key) {
+async function callGemini(text, images, key, kind) {
+  const hotel = kind === "hotel";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
   const parts = [
     ...images.map((image) => ({ inline_data: { mime_type: image.mimeType, data: image.data } })),
-    { text: buildPrompt(text, images.length) },
+    { text: hotel ? buildHotelPrompt(text, images.length) : buildPrompt(text, images.length) },
   ];
   const body = {
     contents: [{ parts }],
     generationConfig: {
       responseMimeType: "application/json",
-      responseSchema: RESPONSE_SCHEMA,
+      responseSchema: hotel ? HOTEL_SCHEMA : RESPONSE_SCHEMA,
       temperature: 0,
     },
   };
@@ -143,6 +180,7 @@ exports.parseItinerary = onRequest(
       return;
     }
 
+    const kind = req.body && req.body.kind === "hotel" ? "hotel" : "itinerary";
     const text = req.body && typeof req.body.text === "string" ? req.body.text : "";
     const rawImages = req.body && Array.isArray(req.body.images) ? req.body.images : [];
     const images = rawImages
@@ -154,12 +192,12 @@ exports.parseItinerary = onRequest(
       return;
     }
     if (!images.length && text.length < 10) {
-      res.status(400).json({ error: "여정서 텍스트가 없습니다." });
+      res.status(400).json({ error: "인식할 텍스트가 없습니다." });
       return;
     }
 
     try {
-      const result = await callGemini(text.slice(0, MAX_TEXT), images, GEMINI_API_KEY.value());
+      const result = await callGemini(text.slice(0, MAX_TEXT), images, GEMINI_API_KEY.value(), kind);
       res.json(result);
     } catch (err) {
       logger.error("Gemini 호출 실패", err);

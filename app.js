@@ -359,6 +359,8 @@ const tripDays = document.querySelector("#tripDays");
 const tripDates = document.querySelector("#tripDates");
 const importPdfButton = document.querySelector("#importPdfButton");
 const pdfInput = document.querySelector("#pdfInput");
+const importVoucherButton = document.querySelector("#importVoucherButton");
+const voucherInput = document.querySelector("#voucherInput");
 const exportScheduleButton = document.querySelector("#exportScheduleButton");
 const importScheduleButton = document.querySelector("#importScheduleButton");
 const scheduleExcelInput = document.querySelector("#scheduleExcelInput");
@@ -2131,22 +2133,27 @@ async function renderPdfPagesToAiImages(file, maxPages = 3) {
 
 const isPdfFile = (file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name);
 
+// PDF면 텍스트를 뽑고(스캔본이라 글자가 거의 없으면 페이지를 이미지로), 이미지면 그대로 AI로 보낸다.
+async function readImportFiles(files) {
+  const pdfFile = files.find(isPdfFile);
+  const imageFiles = files.filter((file) => !isPdfFile(file) && file.type.startsWith("image/")).slice(0, 4);
+  let text = "";
+  let images = [];
+  if (pdfFile) {
+    text = await extractPdfText(pdfFile);
+    if (text.replace(/\s/g, "").length < 40) images = await renderPdfPagesToAiImages(pdfFile);
+  } else {
+    images = await Promise.all(imageFiles.map(imageFileToAiImage));
+  }
+  return { text, images };
+}
+
 async function importItinerary(files) {
   importPdfButton.disabled = true;
   const original = importPdfButton.textContent;
   importPdfButton.textContent = "인식 중…";
   try {
-    const pdfFile = files.find(isPdfFile);
-    const imageFiles = files.filter((file) => !isPdfFile(file) && file.type.startsWith("image/")).slice(0, 4);
-    // PDF면 텍스트를 뽑고(스캔본이라 글자가 거의 없으면 페이지를 이미지로), 이미지면 그대로 AI로 보낸다.
-    let text = "";
-    let images = [];
-    if (pdfFile) {
-      text = await extractPdfText(pdfFile);
-      if (text.replace(/\s/g, "").length < 40) images = await renderPdfPagesToAiImages(pdfFile);
-    } else {
-      images = await Promise.all(imageFiles.map(imageFileToAiImage));
-    }
+    const { text, images } = await readImportFiles(files);
     if (!text.trim() && !images.length) {
       alert("PDF 또는 이미지 파일(JPG·PNG 등)을 선택해 주세요.");
       return;
@@ -2239,6 +2246,104 @@ pdfInput.addEventListener("change", (event) => {
   if (files.length) importItinerary(files);
   pdfInput.value = "";
 });
+
+// === 호텔 바우처(PDF·이미지) 자동 인식 → 숙박 카드 추가 ===
+// 같은 AI 프록시에 kind: "hotel"로 보내면 숙소명·체크인/아웃·금액·결제 상태를 돌려준다.
+const isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
+function normalizeAiHotel(data) {
+  if (!data || typeof data !== "object") return null;
+  const name = typeof data.hotelName === "string" ? data.hotelName.trim() : "";
+  const checkIn = isoDateRe.test(data.checkIn) ? data.checkIn : "";
+  const checkOut = isoDateRe.test(data.checkOut) ? data.checkOut : "";
+  let nights = Math.round(Number(data.nights) || 0);
+  if (checkIn && checkOut) {
+    const diff = Math.round((Date.parse(checkOut) - Date.parse(checkIn)) / 86400000);
+    if (diff > 0) nights = diff;
+  }
+  nights = Math.max(0, Math.min(60, nights));
+  const total = Math.max(0, Number(data.totalAmount) || 0);
+  let nightly = Math.max(0, Number(data.nightlyAmount) || 0);
+  if (total > 0 && nights > 0) nightly = total / nights; // 객실 수·세금 포함 총액 기준이 더 정확하다
+  const rawCurrency = typeof data.currency === "string" ? data.currency.trim().toUpperCase() : "";
+  const currency = spendCurrencies.includes(rawCurrency) ? rawCurrency : "";
+  const guests = Math.round(Number(data.guests) || 0);
+  const pay = data.payment === "onsite" ? "onsite" : data.payment === "prepaid" ? "prepaid" : "";
+  if (!name && !nights && !nightly) return null;
+  return { name, checkIn, checkOut, nights, nightly: Math.round(nightly * 100) / 100, currency, rawCurrency, guests, pay };
+}
+
+async function importHotelVoucher(files) {
+  if (!AI_PARSE_ENDPOINT) {
+    alert("바우처 인식은 AI 설정이 필요합니다. 숙박 정보를 직접 입력해 주세요.");
+    return;
+  }
+  importVoucherButton.disabled = true;
+  const original = importVoucherButton.textContent;
+  importVoucherButton.textContent = "인식 중…";
+  try {
+    const { text, images } = await readImportFiles(files);
+    if (!text.trim() && !images.length) {
+      alert("PDF 또는 이미지 파일(JPG·PNG 등)을 선택해 주세요.");
+      return;
+    }
+    importVoucherButton.textContent = "AI 인식 중…";
+    const res = await fetch(AI_PARSE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(images.length ? { kind: "hotel", images } : { kind: "hotel", text: text.slice(0, 20000) }),
+    });
+    if (!res.ok) throw new Error(`AI ${res.status}`);
+    const hotel = normalizeAiHotel(await res.json());
+    if (!hotel) {
+      alert("바우처에서 숙박 정보를 찾지 못했습니다. 호텔명·체크인/아웃·금액이 잘 보이는 파일로 다시 시도해 주세요.");
+      return;
+    }
+    const lines = [
+      `🏨 ${hotel.name || "(숙소명 없음)"}`,
+      hotel.checkIn || hotel.checkOut ? `체크인 ${hotel.checkIn || "?"} ~ 체크아웃 ${hotel.checkOut || "?"}` : "",
+      `${hotel.nights}박${hotel.nightly ? ` · 1박 ${hotel.nightly.toLocaleString("ko-KR")} ${hotel.currency || hotel.rawCurrency}` : ""}`,
+      hotel.pay ? `결제: ${hotel.pay === "onsite" ? "현장 결제" : "선결제"}` : "",
+      hotel.rawCurrency && !hotel.currency ? `⚠️ ${hotel.rawCurrency} 통화는 지원하지 않아 금액은 비워 둡니다.` : "",
+    ].filter(Boolean);
+    if (!confirm(`바우처 인식 결과\n\n${lines.join("\n")}\n\n숙박에 추가할까요?`)) return;
+    // 아직 손대지 않은 기본 숙박 카드(이름·금액 비어 있음)가 있으면 그 칸을 채우고, 아니면 새로 추가한다.
+    let lodging = lodgings.find((item) => !item.name && !Number(item.nightly));
+    if (!lodging) {
+      lodging = createLodging();
+      lodgings.push(lodging);
+    }
+    if (hotel.name) lodging.name = hotel.name;
+    if (hotel.nights) lodging.nights = hotel.nights;
+    if (hotel.currency && hotel.nightly) {
+      lodging.nightly = hotel.nightly;
+      lodging.currency = hotel.currency;
+    }
+    if (hotel.guests >= 1) lodging.people = Math.min(60, hotel.guests);
+    if (hotel.pay) lodging.pay = hotel.pay;
+    saveLodgings();
+    importVoucherButton.closest("details")?.setAttribute("open", "");
+    renderLodging();
+    renderSpend();
+  } catch (error) {
+    console.log("바우처 불러오기 실패:", error);
+    alert("바우처를 인식하지 못했습니다. 인터넷 연결을 확인하거나, 글자가 선명한 PDF/이미지로 다시 시도해 주세요.");
+  } finally {
+    importVoucherButton.disabled = false;
+    importVoucherButton.textContent = original;
+  }
+}
+
+if (importVoucherButton) {
+  importVoucherButton.addEventListener("click", (event) => {
+    event.preventDefault(); // summary 안의 버튼이라 접힘 토글을 막는다
+    voucherInput.click();
+  });
+  voucherInput.addEventListener("change", (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length) importHotelVoucher(files);
+    voucherInput.value = "";
+  });
+}
 
 // 시간 입력 자동 포맷: 숫자만 쳐도 "10:00" 형태로 콜론을 자동 삽입한다.
 // (지우는 중일 때는 건드리지 않아 백스페이스가 방해받지 않게 한다.)

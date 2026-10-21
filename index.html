@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="design-system/tokens.css?v=14" />
-    <link rel="stylesheet" href="styles.css?v=35" />
+    <link rel="stylesheet" href="styles.css?v=36" />
   </head>
   <body>
     <header class="hero">
@@ -188,8 +188,12 @@
           <details class="spend-collapse">
             <summary class="spend-collapse__summary">
               <span class="spend-collapse__title">숙박</span>
-              <button class="small-action" id="addLodgingButton" type="button">추가</button>
+              <span class="spend-collapse__actions">
+                <button class="small-action" id="importVoucherButton" type="button">바우처 불러오기</button>
+                <button class="small-action" id="addLodgingButton" type="button">추가</button>
+              </span>
             </summary>
+            <input id="voucherInput" type="file" accept="application/pdf,.pdf,image/*" multiple hidden />
             <div class="lodging-list" id="lodgingList"></div>
           </details>
         </section>
@@ -314,7 +318,7 @@
       </dialog>
     </main>
 
-    <script src="app.js?v=35"></script>
+    <script src="app.js?v=36"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

@@ -1795,6 +1795,13 @@ body.saved-mode .segments {
   margin-bottom: 12px;
 }
 
+.spend-collapse__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 /* 접힌 카드의 '추가' 버튼은 눌러도 펼침 토글과 겹치지 않게 위에 뜨도록 */
 .spend-collapse__summary .small-action {
   position: relative;
